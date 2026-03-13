@@ -44,7 +44,7 @@ cd vlang-webui-angular-rspack
 ├── thirdparty/                 # Third-party libraries
 │   ├── v-webui/                # WebUI V language bindings
 │   └── webui/                  # WebUI C library (includes civetweb)
-└── battery                     # Compiled binary (generated)
+└── desktop-dashboard                     # Compiled binary (generated)
 ```
 
 ## Commands
@@ -97,7 +97,7 @@ Create a production-ready build:
 ./run.sh build
 
 # Run the compiled binary
-./battery
+./desktop-dashboard
 ```
 
 ## Logging
@@ -162,7 +162,7 @@ V backend commands are run from the project root:
 
 ```bash
 # Build backend only
-v -cc gcc -o battery src/
+v -cc gcc -o desktop-dashboard src/
 
 # Run backend without building
 v -cc gcc run src/
@@ -321,7 +321,7 @@ v version
 **Window fails to open**
 ```bash
 # Check GTK/WebKit installation
-ldd ./battery | grep -E 'gtk|webkit'
+ldd ./desktop-dashboard | grep -E 'gtk|webkit'
 
 # Install dependencies (Ubuntu/Debian)
 sudo apt-get install libgtk-3-dev libwebkit2gtk-4.0-dev
@@ -366,3 +366,26 @@ MIT License - See LICENSE file for details.
 - Angular (https://angular.dev)
 - Rspack (https://rspack.rs)
 - CivetWeb (https://github.com/civetweb/civetweb)
+
+## Build Configuration
+
+The build system uses a centralized configuration file `build.config.sh`:
+
+```bash
+# Application name (also used as binary name)
+APP_NAME="desktop-dashboard"
+
+# Application version
+APP_VERSION="1.0.0"
+
+# Source directory
+SRC_DIR="src"
+
+# Frontend directory
+FRONTEND_DIR="frontend"
+
+# Output binary name
+OUTPUT_BINARY="${APP_NAME}"
+```
+
+To change the executable name, edit `build.config.sh` and modify `APP_NAME`.

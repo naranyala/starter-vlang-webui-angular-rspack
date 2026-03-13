@@ -71,20 +71,6 @@ pub struct DiskIOInfo {
 	write_time  u64
 }
 
-// BatteryInfo contains battery status (for systems with battery)
-pub struct BatteryInfo {
-mut:
-	has_battery bool
-	percent     int
-	status      string
-	time_left   string
-	icon        string
-	color       string
-	voltage     f64
-	energy_full u64
-	energy_now  u64
-}
-
 // GetSystemInfo returns comprehensive system information
 pub fn get_system_info() SystemInfo {
 	mut info := SystemInfo{
@@ -252,93 +238,6 @@ pub fn get_all_disk_info() []DiskInfo {
 	}
 
 	return disks
-}
-
-// GetBatteryInfo returns battery information
-pub fn get_battery_info() BatteryInfo {
-	mut battery := BatteryInfo{
-		has_battery: false
-		percent: 0
-		status: 'Unknown'
-		time_left: '−'
-		icon: '?'
-		color: '#888888'
-	}
-
-	// Find battery path
-	mut battery_path := '/sys/class/power_supply/BAT0'
-	if !os.is_dir(battery_path) {
-		battery_path = '/sys/class/power_supply/BAT1'
-	}
-
-	if !os.is_dir(battery_path) {
-		return battery
-	}
-
-	battery.has_battery = true
-
-	// Read capacity
-	cap_str := os.read_file(os.join_path(battery_path, 'capacity')) or { '0' }
-	battery.percent = cap_str.trim_space().int()
-	if battery.percent < 0 {
-		battery.percent = 0
-	}
-	if battery.percent > 100 {
-		battery.percent = 100
-	}
-
-	// Read status
-	stat_str := os.read_file(os.join_path(battery_path, 'status')) or { 'Unknown' }
-	battery.status = stat_str.trim_space()
-
-	// Read time remaining
-	time_str := os.read_file(os.join_path(battery_path, 'time_to_empty_now')) or { '' }
-	if time_str.trim_space().len > 0 && battery.status == 'Discharging' {
-		secs := time_str.trim_space().int()
-		if secs > 0 {
-			h := secs / 3600
-			m := (secs % 3600) / 60
-			battery.time_left = '${h}h ${m:02}m'
-		}
-	} else if battery.status == 'Charging' {
-		battery.time_left = 'charging'
-	}
-
-	// Read voltage (if available)
-	volt_str := os.read_file(os.join_path(battery_path, 'voltage_now')) or { '0' }
-	battery.voltage = f64(volt_str.trim_space().int()) / 1000000.0
-
-	// Read energy (if available)
-	energy_full_str := os.read_file(os.join_path(battery_path, 'energy_full')) or { '0' }
-	energy_now_str := os.read_file(os.join_path(battery_path, 'energy_now')) or { '0' }
-	battery.energy_full = u64(energy_full_str.trim_space().int())
-	battery.energy_now = u64(energy_now_str.trim_space().int())
-
-	// Set icon and color based on status and level
-	battery.icon = match battery.status {
-		'Charging' { '⚡' }
-		'Full' { '✓' }
-		'Discharging' {
-			if battery.percent < 20 {
-				'!'
-			} else if battery.percent < 50 {
-				'B'
-			} else {
-				'B'
-			}
-		}
-		else { '?' }
-	}
-
-	battery.color = if battery.percent >= 60 {
-		'#4ade80'
-	} else if battery.percent >= 30 {
-		'#facc15'
-	} else {
-		'#f87171'
-	}
-
-	return battery
 }
 
 // Helper functions

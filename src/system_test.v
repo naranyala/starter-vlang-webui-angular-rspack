@@ -191,39 +191,6 @@ fn test_get_all_disk_info() {
 }
 
 // ============================================================================
-// BatteryInfo Tests
-// ============================================================================
-
-fn test_get_battery_info() {
-	mut assert_count := 0
-	
-	battery := get_battery_info()
-	
-	// Test structure exists (battery info may not be available on all systems)
-	assert true
-	assert_count++
-	
-	// If battery is present, test values
-	if battery.present {
-		assert battery.capacity >= 0
-		assert_count++
-		
-		assert battery.percent >= 0
-		assert_count++
-		
-		assert battery.percent <= 100
-		assert_count++
-		
-		// State should be valid
-		assert battery.state == 'charging' || battery.state == 'discharging' || 
-		       battery.state == 'full' || battery.state == 'unknown'
-		assert_count++
-	}
-	
-	println('test_get_battery_info: ${assert_count} assertions passed')
-}
-
-// ============================================================================
 // Uptime Tests
 // ============================================================================
 
@@ -322,10 +289,7 @@ fn test_all() {
 	// Disk tests
 	test_get_disk_info()
 	test_get_all_disk_info()
-	
-	// Battery tests
-	test_get_battery_info()
-	
+
 	// Uptime tests
 	test_get_uptime()
 	test_format_uptime()

@@ -1,6 +1,3 @@
-// frontend/src/core/error-boundary.component.ts
-// Angular error boundary for isolating component errors
-
 import {
   Component,
   Input,
@@ -8,7 +5,6 @@ import {
   EventEmitter,
   type OnInit,
   type OnDestroy,
-  type OnChanges,
   signal,
   computed,
   inject,
@@ -74,19 +70,12 @@ interface ErrorBoundaryState {
       border: 2px solid #feb2b2;
       border-radius: 12px;
       text-align: center;
-      animation: shake 0.5s ease-in-out;
     }
 
     .error-boundary--critical {
       background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
       border-color: #dc2626;
       color: white;
-    }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-      20%, 40%, 60%, 80% { transform: translateX(5px); }
     }
 
     .error-boundary__content {
@@ -174,7 +163,7 @@ interface ErrorBoundaryState {
     }
   `],
 })
-export class ErrorBoundaryComponent implements OnInit, OnDestroy, OnChanges {
+export class ErrorBoundaryComponent implements OnInit, OnDestroy {
   @Input() title?: string;
   @Input() componentId?: string;
   @Input() showDetails = false;
@@ -215,12 +204,6 @@ export class ErrorBoundaryComponent implements OnInit, OnDestroy, OnChanges {
   ngOnInit(): void {
     this.state.componentId = this.componentId || `boundary-${Date.now()}`;
     this.logger.debug('Error boundary initialized', { componentId: this.state.componentId });
-  }
-
-  ngOnChanges(): void {
-    if (this.componentId) {
-      this.state.componentId = this.componentId;
-    }
   }
 
   ngOnDestroy(): void {

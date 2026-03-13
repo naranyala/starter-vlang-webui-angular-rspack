@@ -5,6 +5,7 @@ build/
 *.o
 
 frontend/node_modules
+frontend/dist
 
 # V
 .vpkg/

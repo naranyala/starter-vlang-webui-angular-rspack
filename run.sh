@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
-# Battery Monitor - Build & Run Script with Full Pipeline
+# Desktop Dashboard - Build & Run Script with Full Pipeline
 # All logs are output to terminal (no log files)
 
 set -e
+
+# Load build configuration
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/build.config.sh"
 
 # Colors for terminal output
 GREEN='\033[0;32m'
@@ -104,19 +108,19 @@ build_frontend() {
 # Build backend (V lang)
 build_backend() {
     log_step "Building backend (V lang)..."
-    log_v "Compiler: gcc"
-    log_v "Output: battery"
-    log_v "Source: ./src"
+    log_v "Compiler: ${V_COMPILER}"
+    log_v "Output: ${OUTPUT_BINARY}"
+    log_v "Source: ./${SRC_DIR}"
 
     # Build with V compiler from src directory
-    v -cc gcc -o battery src/ 2>&1 | while read line; do
+    v -cc ${V_COMPILER} -o ${OUTPUT_BINARY} ${SRC_DIR}/ 2>&1 | while read line; do
         echo -e "${MAGENTA}[V]${NC} $line"
     done
 
-    if [ -f "$SCRIPT_DIR/battery" ]; then
+    if [ -f "$SCRIPT_DIR/${OUTPUT_BINARY}" ]; then
         log_success "Backend build complete"
-        log_info "Binary: $SCRIPT_DIR/battery"
-        ls -lh "$SCRIPT_DIR/battery" 2>&1 | while read line; do
+        log_info "Binary: $SCRIPT_DIR/${OUTPUT_BINARY}"
+        ls -lh "$SCRIPT_DIR/${OUTPUT_BINARY}" 2>&1 | while read line; do
             echo -e "${MAGENTA}[BINARY]${NC} $line"
         done
     else
@@ -147,7 +151,7 @@ run_dev() {
     echo ""
     
     # Check if backend needs rebuilding
-    if [ ! -f "$SCRIPT_DIR/battery" ]; then
+    if [ ! -f "$SCRIPT_DIR/${OUTPUT_BINARY}" ]; then
         log_info "Backend binary not found, building..."
         build_backend
         echo ""
@@ -156,11 +160,11 @@ run_dev() {
         log_info "Run './run.sh build' to rebuild backend"
         echo ""
     fi
-    
+
     # Show runtime info
     log_step "Starting application..."
     log_info "Frontend: $DIST_DIR"
-    log_info "Backend: $SCRIPT_DIR/battery"
+    log_info "Backend: $SCRIPT_DIR/${OUTPUT_BINARY}"
     echo ""
     log_info "Press Ctrl+C to stop"
     echo ""
@@ -178,23 +182,23 @@ run_dev() {
 # Clean build artifacts
 clean() {
     log_step "Cleaning build artifacts..."
-    
-    if [ -f "$SCRIPT_DIR/battery" ]; then
-        rm -f "$SCRIPT_DIR/battery"
-        log_info "Removed: battery"
+
+    if [ -f "$SCRIPT_DIR/${OUTPUT_BINARY}" ]; then
+        rm -f "$SCRIPT_DIR/${OUTPUT_BINARY}"
+        log_info "Removed: ${OUTPUT_BINARY}"
     fi
-    
+
     if [ -d "$DIST_DIR" ]; then
         rm -rf "$DIST_DIR"
         log_info "Removed: $DIST_DIR"
     fi
-    
+
     # Clean frontend node_modules cache
     if [ -d "$FRONTEND_DIR/.angular" ]; then
         rm -rf "$FRONTEND_DIR/.angular"
         log_info "Removed: .angular cache"
     fi
-    
+
     log_success "✓ Clean complete"
 }
 
@@ -242,7 +246,7 @@ case "$cmd" in
         ;;
     run)
         log_step "Running existing build..."
-        if [ ! -f "$SCRIPT_DIR/battery" ]; then
+        if [ ! -f "$SCRIPT_DIR/${OUTPUT_BINARY}" ]; then
             log_error "Binary not found. Run './run.sh build' first."
             exit 1
         fi
@@ -251,9 +255,7 @@ case "$cmd" in
             exit 1
         fi
         log_info "Starting application..."
-        v -cc gcc run src/ 2>&1 | while read line; do
-            echo -e "${MAGENTA}[APP]${NC} $line"
-        done
+        ./${OUTPUT_BINARY}
         ;;
     clean)
         clean

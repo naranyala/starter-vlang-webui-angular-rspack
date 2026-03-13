@@ -250,14 +250,20 @@ export function createError(code: ErrorCode, message: string, details?: string):
  * This function should provide helpful, actionable messages for users
  */
 export function toUserMessage(error: ErrorValue): string {
+  // Handle null/undefined error
+  if (!error) {
+    return 'An unknown error occurred.';
+  }
+
   // For validation errors, show field-specific messages
   if (error.field && error.code === ErrorCode.ValidationFailed) {
-    return `${error.field}: ${error.message}`;
+    const msg = error.message ?? 'Invalid value';
+    return `${error.field}: ${msg}`;
   }
 
   // For already exists errors
   if (error.code === ErrorCode.DbAlreadyExists) {
-    return error.message || 'This item already exists.';
+    return error.message ?? 'This item already exists.';
   }
 
   // For not found errors
@@ -267,7 +273,7 @@ export function toUserMessage(error: ErrorValue): string {
     error.code === ErrorCode.UserNotFound ||
     error.code === ErrorCode.EntityNotFound
   ) {
-    return error.message || 'The requested item was not found.';
+    return error.message ?? 'The requested item was not found.';
   }
 
   // For database errors
@@ -275,11 +281,14 @@ export function toUserMessage(error: ErrorValue): string {
     return 'Unable to connect to the database. Please check your connection and try again.';
   }
   if (error.code === ErrorCode.DbQueryFailed) {
-    return error.message?.includes('duplicate')
-      ? 'A record with this information already exists.'
-      : error.message?.includes('constraint')
-        ? 'This operation would violate a database rule.'
-        : 'A database operation failed. Please try again.';
+    const msg = error.message ?? '';
+    if (msg.includes('duplicate')) {
+      return 'A record with this information already exists.';
+    }
+    if (msg.includes('constraint')) {
+      return 'This operation would violate a database rule.';
+    }
+    return 'A database operation failed. Please try again.';
   }
   if (error.code === ErrorCode.DbConstraintViolation) {
     return 'This action would violate a data rule. Please check your input.';
@@ -293,7 +302,7 @@ export function toUserMessage(error: ErrorValue): string {
     return 'Invalid configuration. Please review your settings.';
   }
   if (error.code === ErrorCode.ConfigMissingField) {
-    return error.message || 'Required configuration is missing.';
+    return error.message ?? 'Required configuration is missing.';
   }
 
   // For serialization errors
@@ -304,18 +313,18 @@ export function toUserMessage(error: ErrorValue): string {
     return 'Failed to process data. Please check your input and try again.';
   }
   if (error.code === ErrorCode.InvalidFormat) {
-    return error.message || 'The data format is invalid.';
+    return error.message ?? 'The data format is invalid.';
   }
 
   // For validation errors (without field)
   if (error.code === ErrorCode.ValidationFailed) {
-    return error.message || 'Validation failed. Please check your input.';
+    return error.message ?? 'Validation failed. Please check your input.';
   }
   if (error.code === ErrorCode.MissingRequiredField) {
-    return error.message || 'A required field is missing.';
+    return error.message ?? 'A required field is missing.';
   }
   if (error.code === ErrorCode.InvalidFieldValue) {
-    return error.message || 'A field contains an invalid value.';
+    return error.message ?? 'A field contains an invalid value.';
   }
 
   // For system errors - provide more helpful messages
@@ -340,7 +349,7 @@ export function toUserMessage(error: ErrorValue): string {
   }
 
   // Default: show the message if available, otherwise generic
-  return error.message || 'An error occurred. Please try again.';
+  return error.message ?? 'An error occurred. Please try again.';
 }
 
 /**

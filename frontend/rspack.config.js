@@ -25,11 +25,27 @@ module.exports = {
     rules: [
       {
         test: /\.html$/,
-        use: 'raw-loader',
+        oneOf: [
+          {
+            resourceQuery: /raw/,
+            type: 'asset/source',
+          },
+          {
+            use: 'raw-loader',
+          },
+        ],
       },
       {
         test: /\.css$/,
-        use: ['style-loader', 'css-loader'],
+        oneOf: [
+          {
+            resourceQuery: /raw/,
+            type: 'asset/source',
+          },
+          {
+            use: ['style-loader', 'css-loader'],
+          },
+        ],
       },
       {
         test: /\.[cm]?ts$/,

@@ -11,11 +11,11 @@
       <div class="top-bar__right">
         <span class="top-bar__stat">
           <span class="top-bar__stat-icon">◼</span>
-          {{ windowEntries().length }}
+          {{ windowEntries()?.length || 0 }}
         </span>
         <span class="top-bar__stat">
           <span class="top-bar__stat-icon">◻</span>
-          {{ minimizedWindowCount() }}
+          {{ minimizedWindowCount() || 0 }}
         </span>
       </div>
       <span class="top-bar__toggle">
@@ -101,7 +101,7 @@
                [class.error]="wsConnectionState() === 'error'">
           </div>
           <span class="status-bar__text">
-            {{ wsConnectionState() | titlecase }}
+            {{ (wsConnectionState() || 'Unknown') | titlecase }}
             @if (wsPort()) {
               <span class="status-bar__detail">• Port: {{ wsPort() }}</span>
             }

@@ -8,8 +8,15 @@ import { getLogger } from '../viewmodels/logger.viewmodel';
 import { WindowStateViewModel } from '../viewmodels/window-state.viewmodel';
 import { ErrorModalComponent } from './shared/error-modal.component';
 import { DevtoolsComponent } from './devtools/devtools.component';
-import template from './app.component.html?raw';
-import styles from './app.component.css?raw';
+
+// Import template and styles with null guards
+const template: string = (require('./app.component.html?raw') as string) || '';
+const styles: string = (require('./app.component.css?raw') as string) || '';
+
+// Ensure template is not empty
+if (!template) {
+  console.error('AppComponent template failed to load');
+}
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- Interface kept for documentation
 interface _ConnectionStats {
