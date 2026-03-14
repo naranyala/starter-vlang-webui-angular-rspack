@@ -197,13 +197,14 @@ pub mut:
 // UserInfo holds user information
 pub struct UserInfo {
 pub mut:
-	id          string
-	username    string
-	email       string
-	roles       []string
-	permissions []string
-	created_at  u64
-	last_login  u64
+	id            string
+	username      string
+	email         string
+	password_hash string  // SEC-001: Hashed password (never plaintext)
+	roles         []string
+	permissions   []string
+	created_at    u64
+	last_login    u64
 }
 
 // IHealthCheck interface for health monitoring

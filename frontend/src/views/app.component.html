@@ -4,12 +4,12 @@
     <div class="top-bar" (click)="toggleTop()">
       <div class="top-bar__left">
         <span class="top-bar__brand">
-          <span class="top-bar__icon">T</span>
-          <span class="top-bar__name">TechHub</span>
+          <span class="top-bar__icon">A</span>
+          <span class="top-bar__name">Angular Demo</span>
         </span>
       </div>
       <div class="top-bar__right">
-        <button type="button" class="top-bar__close-all" (click)="closeAllWindows($event)" title="Close all windows">
+        <button type="button" class="top-bar__close-all" (click)="closeAllWindows($event)" title="Close windows">
           <span class="top-bar__close-all__icon">✕</span>
           <span class="top-bar__close-all__label">Close All</span>
         </button>
@@ -18,15 +18,22 @@
         {{ topCollapsed() ? '▼' : '▲' }}
       </span>
     </div>
-    
+
     <div class="top-panel__content">
       <nav class="top-nav">
         <button type="button" class="top-nav__item"
-                [class.active]="!hasFocusedWindow()"
-                (click)="showMainMenu($event)"
-                title="Show all windows">
-          <span class="top-nav__icon">H</span>
-          <span class="top-nav__label">Home</span>
+                [class.active]="activeCard() === 1"
+                (click)="setActiveCard(1)"
+                title="Authentication">
+          <span class="top-nav__icon">🔐</span>
+          <span class="top-nav__label">Auth</span>
+        </button>
+        <button type="button" class="top-nav__item"
+                [class.active]="activeCard() === 2"
+                (click)="setActiveCard(2)"
+                title="SQLite CRUD">
+          <span class="top-nav__icon">🗄️</span>
+          <span class="top-nav__label">SQLite</span>
         </button>
 
         @for (windowEntry of windowEntries(); track windowEntry.id) {
@@ -45,43 +52,74 @@
 
   <!-- MAIN CONTENT -->
   <main class="main-content">
-    <div class="search-section">
-      <div class="search-container">
-        <span class="search-icon">S</span>
-        <input type="text"
-               class="search-input"
-               placeholder="Search technologies..."
-               [value]="searchQuery()"
-               (input)="onSearch($event)" />
-        @if (searchQuery()) {
-          <button type="button" class="clear-btn" (click)="clearSearch()" title="Clear search">✕</button>
-        }
-      </div>
-    </div>
-    
-    <div class="cards-grid">
-      @for (card of filteredCards(); track card.id) {
-        <article class="card" 
-                 [style.border-left-color]="card.color" 
-                 (click)="openCard(card)"
-                 [attr.data-card-id]="card.id"
-                 tabindex="0"
-                 (keydown.enter)="openCard(card)"
-                 (keydown.space)="openCard(card)">
-          <div class="card__icon" [style.background]="card.color">
-            {{ card.icon }}
+    @if (activeCard() === 1) {
+      <div class="hero-section">
+        <div class="hero-content">
+          <div class="hero-icon">🔐</div>
+          <h1 class="hero-title">Authentication Demo</h1>
+          <p class="hero-subtitle">Secure login and registration system with modern UI/UX design and best security practices.</p>
+          
+          <div class="hero-features">
+            <div class="feature-item">
+              <span class="feature-icon">🔒</span>
+              <span class="feature-label">Secure</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">✨</span>
+              <span class="feature-label">Modern</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">📱</span>
+              <span class="feature-label">Responsive</span>
+            </div>
           </div>
-          <h3 class="card__title">{{ card.title }}</h3>
-          <p class="card__description">{{ card.description }}</p>
-          <span class="card__hint">Click to learn more</span>
-        </article>
-      } @empty {
-        <div class="no-results">
-          <span class="no-results__icon">?</span>
-          <p class="no-results__text">No matching cards for "{{ searchQuery() }}"</p>
+
+          <button class="hero-cta" (click)="openAuthWindow($event)">
+            <span class="hero-cta__icon">🚀</span>
+            <span class="hero-cta__text">Open Login Window</span>
+          </button>
         </div>
-      }
-    </div>
+      </div>
+    } @else {
+      <div class="hero-section">
+        <div class="hero-content">
+          <div class="hero-icon">🗄️</div>
+          <h1 class="hero-title">SQLite CRUD Demo</h1>
+          <p class="hero-subtitle">Complete CRUD operations with Vlang backend SQLite integration. Create, read, update, and delete users.</p>
+          
+          <div class="hero-features">
+            <div class="feature-item">
+              <span class="feature-icon">➕</span>
+              <span class="feature-label">Create</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">📋</span>
+              <span class="feature-label">Read</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">✏️</span>
+              <span class="feature-label">Update</span>
+            </div>
+            <div class="feature-item">
+              <span class="feature-icon">🗑️</span>
+              <span class="feature-label">Delete</span>
+            </div>
+          </div>
+
+          <button class="hero-cta" (click)="openSqliteWindow($event)">
+            <span class="hero-cta__icon">🚀</span>
+            <span class="hero-cta__text">Open SQLite Window</span>
+          </button>
+        </div>
+      </div>
+    }
+
+    @if (windowEntries().length === 0) {
+      <div class="empty-state">
+        <div class="empty-state__icon">👆</div>
+        <p class="empty-state__text">Click the button above to open a window</p>
+      </div>
+    }
   </main>
 
   <!-- BOTTOM PANEL -->
@@ -90,34 +128,17 @@
       <!-- Status Bar -->
       <div class="status-bar">
         <div class="status-bar__left">
-          <div class="status-indicator" 
-               [class.connected]="wsConnectionState() === 'connected'"
-               [class.connecting]="wsConnectionState() === 'connecting'"
-               [class.disconnected]="wsConnectionState() === 'disconnected'"
-               [class.error]="wsConnectionState() === 'error'">
-          </div>
-          <span class="status-bar__text">
-            {{ (wsConnectionState() || 'Unknown') | titlecase }}
-            @if (wsPort()) {
-              <span class="status-bar__detail">• Port: {{ wsPort() }}</span>
-            }
-            @if (wsLastError()) {
-              <span class="status-bar__error">• {{ wsLastError() }}</span>
-            }
-          </span>
+          <div class="status-indicator connected"></div>
+          <span class="status-bar__text">Ready</span>
         </div>
         <div class="status-bar__right">
           <span class="status-bar__mini-stat">
-            <span class="status-bar__mini-label">Latency:</span>
-            {{ wsLatency() }}ms
-          </span>
-          <span class="status-bar__mini-stat">
-            <span class="status-bar__mini-label">Uptime:</span>
-            {{ formatUptime(wsUptime()) }}
+            <span class="status-bar__mini-label">Windows:</span>
+            {{ windowEntries().length }}
           </span>
         </div>
-        <button class="status-bar__toggle" 
-                type="button" 
+        <button class="status-bar__toggle"
+                type="button"
                 (click)="toggleBottom(); $event.stopPropagation()"
                 title="Toggle details">
           {{ bottomCollapsed() ? '⌄' : '⌃' }}
@@ -127,110 +148,38 @@
       <!-- Expanded Content -->
       @if (!bottomCollapsed()) {
         <div class="bottom-panel__expanded">
-          <!-- Tabs -->
-          <div class="bottom-tabs">
-            @for (tab of bottomPanelTabs; track tab.id) {
-              <button type="button" class="bottom-tabs__tab"
-                      [class.active]="activeBottomTab() === tab.id"
-                      (click)="selectBottomTab(tab.id, $event)">
-                <span class="bottom-tabs__icon">{{ tab.icon }}</span>
-                <span class="bottom-tabs__label">{{ tab.label }}</span>
-              </button>
-            }
-            <button type="button" class="bottom-tabs__tab"
-                    [class.active]="activeBottomTab() === 'devtools'"
-                    (click)="selectBottomTab('devtools', $event)">
-              <span class="bottom-tabs__icon">D</span>
-              <span class="bottom-tabs__label">DevTools</span>
-            </button>
-          </div>
-
-          <!-- Tab Content -->
-          <div class="bottom-tabs__content">
-            @if (activeBottomTab() === 'devtools') {
-              <app-devtools></app-devtools>
-            } @else if (activeBottomTab() === 'overview') {
-              <div class="tab-panel">
-                <div class="info-card">
-                  <span class="info-card__label">Runtime</span>
-                  <span class="info-card__value">WebUI (GTK/WebKit)</span>
-                </div>
-                <div class="info-card">
-                  <span class="info-card__label">Status</span>
-                  <span class="info-card__value" 
-                        [class.status-ok]="wsConnectionState() === 'connected'"
-                        [class.warn]="wsConnectionState() !== 'connected'">
-                    {{ wsConnectionState() === 'connected' ? 'Ready' : wsConnectionState() }}
-                  </span>
-                </div>
+          <div class="info-panel">
+            <div class="info-card">
+              <span class="info-card__icon">📦</span>
+              <div class="info-card__content">
+                <span class="info-card__label">Framework</span>
+                <span class="info-card__value">Angular 21</span>
               </div>
-            } @else if (activeBottomTab() === 'metrics') {
-              <div class="tab-panel">
-                <div class="info-card">
-                  <span class="info-card__label">Memory</span>
-                  <span class="info-card__value">24.5 MB</span>
-                </div>
-                <div class="info-card">
-                  <span class="info-card__label">CPU</span>
-                  <span class="info-card__value">2.3%</span>
-                </div>
-                <div class="info-card">
-                  <span class="info-card__label">Windows</span>
-                  <span class="info-card__value">{{ windowEntries().length }}</span>
-                </div>
+            </div>
+            <div class="info-card">
+              <span class="info-card__icon">🪟</span>
+              <div class="info-card__content">
+                <span class="info-card__label">Window System</span>
+                <span class="info-card__value">WinBox.js</span>
               </div>
-            } @else if (activeBottomTab() === 'events') {
-              <div class="tab-panel">
-                <div class="info-card">
-                  <span class="info-card__label">Events Today</span>
-                  <span class="info-card__value">12</span>
-                </div>
-                <div class="info-card">
-                  <span class="info-card__label">Errors</span>
-                  <span class="info-card__value status-ok">0</span>
-                </div>
-                <div class="info-card">
-                  <span class="info-card__label">Last Event</span>
-                  <span class="info-card__value">2m ago</span>
-                </div>
+            </div>
+            <div class="info-card">
+              <span class="info-card__icon">🗄️</span>
+              <div class="info-card__content">
+                <span class="info-card__label">Database</span>
+                <span class="info-card__value">SQLite (Vlang)</span>
               </div>
-            } @else if (activeBottomTab() === 'connection') {
-              <div class="tab-panel">
-                <div class="info-card">
-                  <span class="info-card__label">Latency</span>
-                  <span class="info-card__value">{{ wsLatency() }}ms</span>
-                </div>
-                <div class="info-card">
-                  <span class="info-card__label">Uptime</span>
-                  <span class="info-card__value">{{ formatUptime(wsUptime()) }}</span>
-                </div>
-                <div class="info-card">
-                  <span class="info-card__label">Success Rate</span>
-                  <span class="info-card__value">{{ wsTotalCalls() > 0 ? (wsSuccessfulCalls() / wsTotalCalls() * 100 | number:'1.0-0') : 100 }}%</span>
-                </div>
+            </div>
+            <div class="info-card">
+              <span class="info-card__icon">🔧</span>
+              <div class="info-card__content">
+                <span class="info-card__label">Build Tool</span>
+                <span class="info-card__value">Rspack</span>
               </div>
-            } @else if (activeBottomTab() === 'info') {
-              <div class="tab-panel">
-                <div class="info-card">
-                  <span class="info-card__label">Version</span>
-                  <span class="info-card__value">1.0.0</span>
-                </div>
-                <div class="info-card">
-                  <span class="info-card__label">Build</span>
-                  <span class="info-card__value">2024.02.18</span>
-                </div>
-                <div class="info-card">
-                  <span class="info-card__label">Stack</span>
-                  <span class="info-card__value">Angular + Rust</span>
-                </div>
-              </div>
-            }
+            </div>
           </div>
         </div>
       }
     </div>
   </footer>
-
-  <!-- Error Modal -->
-  <app-error-modal [error]="globalErrorService.activeError()" (dismissed)="globalErrorService.dismiss()" />
 </div>

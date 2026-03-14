@@ -688,7 +688,11 @@ pub fn (s &HealthCheckService) get_status() HealthSummary {
 	return summary
 }
 
-// ==================== AuthService (Basic Implementation) ====================
+// ==================== AuthService (Secure Implementation) ====================
+// SEC-001: Password hashing implemented
+// SEC-002: Secure token generation implemented
+
+import security
 
 pub struct AuthService {
 pub mut:
@@ -697,6 +701,7 @@ pub mut:
 	current_user    &UserInfo
 	initialized     bool
 	token_expiry_sec int
+	csrf            &security.CSRFProtection
 }
 
 pub fn new_auth_service() &AuthService {
@@ -706,6 +711,7 @@ pub fn new_auth_service() &AuthService {
 		current_user: 0
 		initialized: false
 		token_expiry_sec: 3600 // 1 hour default
+		csrf: security.new_csrf_protection()
 	}
 }
 
@@ -733,18 +739,29 @@ pub fn (s &AuthService) register_user(username string, password string, email st
 	if s.users.exists(username) {
 		return false
 	}
-	
+
+	// SEC-001: Validate password strength
+	security.validate_password_strength(password) or {
+		return false  // Password too weak
+	}
+
+	// SEC-001: Hash password before storage (never store plaintext)
+	password_hash := security.hash_password(password) or {
+		return false  // Hashing failed
+	}
+
 	now := u64(time.now().unix())
 	s.users[username] = UserInfo{
 		id: 'user_${now}'
 		username: username
 		email: email
+		password_hash: password_hash  // SEC-001: Store hash, not plaintext
 		roles: ['user']
 		permissions: ['read']
 		created_at: now
 		last_login: 0
 	}
-	
+
 	return true
 }
 
@@ -752,16 +769,17 @@ pub fn (s &AuthService) authenticate(username string, password string) ?AuthResu
 	user := s.users[username] or {
 		return error('User not found')
 	}
-	
-	// In production, verify password hash
-	// For demo, accept any non-empty password
-	if password.trim_space().len == 0 {
-		return error('Invalid password')
+
+	// SEC-001: Verify password against stored hash (not plaintext comparison)
+	if !security.verify_password(password, user.password_hash) {
+		return error('Invalid credentials')
 	}
-	
-	// Generate token
-	token := s.generate_token(user.id, user.roles)
-	
+
+	// SEC-002: Generate cryptographically secure token
+	token := security.generate_secure_token('tok') or {
+		return error('Failed to generate token')
+	}
+
 	result := AuthResult{
 		success: true
 		user_id: user.id
@@ -772,13 +790,13 @@ pub fn (s &AuthService) authenticate(username string, password string) ?AuthResu
 		expires_at: u64(time.now().unix()) + u64(s.token_expiry_sec)
 		error: ''
 	}
-	
+
 	s.tokens[token] = result
-	
+
 	// Update last login
 	user.last_login = u64(time.now().unix())
 	s.users[username] = user
-	
+
 	return result
 }
 
@@ -797,9 +815,26 @@ pub fn (s &AuthService) validate_token(token string) ?AuthResult {
 }
 
 pub fn (s &AuthService) generate_token(user_id string, roles []string) string {
-	// Simple token generation (in production, use JWT or similar)
-	now := u64(time.now().unix())
-	return 'token_${user_id}_${now}'
+	// SEC-002: Use cryptographically secure random token
+	token := security.generate_secure_token('tok') or {
+		return 'token_error_${u64(time.now().unix())}'
+	}
+	return token
+}
+
+// SEC-006: CSRF token generation
+pub fn (mut s &AuthService) generate_csrf_token(user_id string) !string {
+	return s.csrf.generate_token(user_id)
+}
+
+// SEC-006: CSRF token validation
+pub fn (mut s &AuthService) validate_csrf_token(token string, user_id string) bool {
+	return s.csrf.validate_token(token, user_id)
+}
+
+// SEC-006: CSRF token invalidation
+pub fn (mut s &AuthService) invalidate_csrf_token(token string) {
+	s.csrf.invalidate_token(token)
 }
 
 pub fn (s &AuthService) revoke_token(token string) bool {

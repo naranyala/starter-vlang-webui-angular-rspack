@@ -4,7 +4,7 @@ This document describes the architecture of the Desktop Dashboard application.
 
 ## System Architecture
 
-The application follows a client-server architecture with dependency injection on both tiers:
+The application follows a client-server architecture with dependency injection on both tiers and multiple communication protocols:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -14,9 +14,9 @@ The application follows a client-server architecture with dependency injection o
 │  │  Components │  │   Windows   │  │    (DI Injected)        │  │
 │  └─────────────┘  └─────────────┘  └─────────────────────────┘  │
 │         │                │                    │                  │
-│         │          WebSocket              EventBus               │
-│         │                │                    │                  │
-│         └────────────────┼────────────────────┘                  │
+│         │          WebUI Bridge           EventBus               │
+│         │          (RPC Protocol)            │                  │
+│         └────────────────┼───────────────────┘                  │
 └──────────────────────────┼───────────────────────────────────────┘
                            │
                            │ WebUI Bridge (JavaScript ↔ V)
@@ -32,6 +32,18 @@ The application follows a client-server architecture with dependency injection o
 │                   Linux Sysfs / Procfs                            │
 └───────────────────────────────────────────────────────────────────┘
 ```
+
+## Communication Protocols
+
+The application uses three communication approaches:
+
+| Protocol | Type | Direction | Use Case |
+|----------|------|-----------|----------|
+| **WebUI Bridge** | RPC | Bidirectional | Desktop window management, API calls |
+| **HTTP/Fetch** | REST | Client→Server | Future web deployment, external APIs |
+| **Event Bus** | Pub/Sub | Broadcast | Cross-component state sync |
+
+See [05-COMMUNICATION.md](05-COMMUNICATION.md) for detailed protocol documentation.
 
 ## Component Layers
 

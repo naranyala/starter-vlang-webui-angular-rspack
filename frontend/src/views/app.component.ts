@@ -1,101 +1,44 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, type OnDestroy, type OnInit, signal } from '@angular/core';
-import { GlobalErrorService } from '../core/global-error.service';
 import { type WinBoxInstance, WinBoxService } from '../core/winbox.service';
 import { type BottomPanelTab, type Card, TECH_CARDS, type WindowEntry } from '../models';
 import { EventBusViewModel } from '../viewmodels/event-bus.viewmodel';
 import { getLogger } from '../viewmodels/logger.viewmodel';
 import { WindowStateViewModel } from '../viewmodels/window-state.viewmodel';
-import { ErrorModalComponent } from './shared/error-modal.component';
-import { DevtoolsComponent } from './devtools/devtools.component';
+import { AuthComponent } from './auth/auth.component';
+import { SqliteCrudComponent } from './sqlite/sqlite.component';
 
-// Import template and styles with null guards
-const template: string = (require('./app.component.html?raw') as string) || '';
+// Import styles with null guards
 const styles: string = (require('./app.component.css?raw') as string) || '';
-
-// Ensure template is not empty
-if (!template) {
-  console.error('AppComponent template failed to load');
-}
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- Interface kept for documentation
-interface _ConnectionStats {
-  state: string;
-  connected: boolean;
-  lastError: string | null;
-  port: string | null;
-  latency: number;
-  uptime: number;
-  reconnects: number;
-  pingSuccess: number;
-  totalCalls: number;
-  successfulCalls: number;
-}
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, ErrorModalComponent, DevtoolsComponent],
-  template: template,
+  imports: [CommonModule, AuthComponent, SqliteCrudComponent],
+  template: require('./app.component.html?raw') as string,
   styles: [styles],
 })
 export class AppComponent implements OnInit, OnDestroy {
-  readonly globalErrorService = inject(GlobalErrorService);
   private readonly winboxService = inject(WinBoxService);
   private readonly logger = getLogger('app.component');
   private readonly eventBus: EventBusViewModel<Record<string, unknown>>;
   private readonly windowState: WindowStateViewModel;
 
-  searchQuery = signal('');
   topCollapsed = signal(false);
   bottomCollapsed = signal(true);
-  activeBottomTab = signal<string>('overview');
+  activeCard = signal<1 | 2>(1);
   windowEntries = signal<WindowEntry[]>([]);
 
-  wsConnectionState = signal('connecting');
-  wsDetailsExpanded = signal(false);
-  wsPort = signal<string | null>(null);
-  wsLatency = signal(0);
-  wsUptime = signal(0);
-  wsReconnects = signal(0);
-  wsPingSuccess = signal(100);
-  wsTotalCalls = signal(0);
-  wsSuccessfulCalls = signal(0);
-  wsLastError = signal<string | null>(null);
-
-  // Window positioning constants
-
   bottomPanelTabs: BottomPanelTab[] = [
-    { id: 'overview', label: 'Overview', icon: '○', content: 'System overview' },
-    { id: 'metrics', label: 'Metrics', icon: 'M', content: 'Performance metrics' },
-    { id: 'connection', label: 'Connection', icon: 'C', content: 'Connection stats' },
-    { id: 'events', label: 'Events', icon: '◉', content: 'Recent events' },
     { id: 'info', label: 'Info', icon: 'ℹ', content: 'Application info' },
   ];
 
   private existingBoxes: WinBoxInstance[] = [];
-  private appReadyUnsubscribe: (() => void) | null = null;
-  private windowIdByCardId = new Map<number, string>();
+  private authWindowId = 'auth-window-1';
+  private sqliteWindowId = 'sqlite-window-2';
   private resizeHandler: (() => void) | null = null;
 
   cards: Card[] = TECH_CARDS;
-
-  filteredCards = computed(() => {
-    const query = this.searchQuery().toLowerCase().trim();
-    if (!query) return this.cards;
-    return this.cards.filter(card =>
-      `${card.title} ${card.description}`.toLowerCase().includes(query)
-    );
-  });
-
-  totalErrors = computed(() => {
-    // Count errors from error service and interceptor
-    const errorWindow = window as unknown as {
-      __ERROR_INTERCEPTOR__?: { getStats: () => { total: number } };
-    };
-    const interceptorTotal = errorWindow.__ERROR_INTERCEPTOR__?.getStats().total ?? 0;
-    return interceptorTotal;
-  });
 
   hasFocusedWindow = computed(() => {
     return this.windowEntries().some(entry => entry.focused);
@@ -110,86 +53,20 @@ export class AppComponent implements OnInit, OnDestroy {
     this.windowState = new WindowStateViewModel();
   }
 
-  onSearch(event: Event): void {
-    const value = (event.target as HTMLInputElement).value;
-    this.searchQuery.set(value);
-    this.eventBus.publish('search:updated', { query: value, length: value.length });
-  }
-
-  clearSearch(): void {
-    this.searchQuery.set('');
-    this.eventBus.publish('search:cleared', { timestamp: Date.now() });
+  setActiveCard(card: 1 | 2): void {
+    this.activeCard.set(card);
   }
 
   toggleTop(): void {
     this.topCollapsed.set(!this.topCollapsed());
     this.eventBus.publish('ui:top-panel:toggled', { collapsed: this.topCollapsed() });
-    // Wait for CSS transition (300ms) + small buffer to ensure DOM is updated
     setTimeout(() => this.resizeAllWindows(), 320);
   }
 
   toggleBottom(): void {
     this.bottomCollapsed.set(!this.bottomCollapsed());
     this.eventBus.publish('ui:bottom-panel:toggled', { collapsed: this.bottomCollapsed() });
-    // Wait for CSS transition (300ms) + small buffer to ensure DOM is updated
     setTimeout(() => this.resizeAllWindows(), 320);
-  }
-
-  selectBottomTab(tabId: string, event: Event): void {
-    event.stopPropagation();
-    this.activeBottomTab.set(tabId);
-    if (this.bottomCollapsed()) this.bottomCollapsed.set(false);
-    this.eventBus.publish('ui:bottom-panel:tab-changed', { tabId });
-    // Wait for CSS transition (300ms) + small buffer to ensure DOM is updated
-    setTimeout(() => this.resizeAllWindows(), 320);
-  }
-
-  getCurrentTabInfo(): string {
-    const tab = this.bottomPanelTabs.find(t => t.id === this.activeBottomTab());
-    return tab ? tab.content : '';
-  }
-
-  toggleWsDetails(): void {
-    this.wsDetailsExpanded.set(!this.wsDetailsExpanded());
-    if (!this.wsDetailsExpanded()) {
-      this.bottomCollapsed.set(true);
-    } else {
-      this.bottomCollapsed.set(false);
-    }
-  }
-
-  formatUptime(ms: number): string {
-    const seconds = Math.floor(ms / 1000);
-    const minutes = Math.floor(seconds / 60);
-    const hours = Math.floor(minutes / 60);
-    const days = Math.floor(hours / 24);
-    if (days > 0) return `${days}d ${hours % 24}h ${minutes % 60}m`;
-    if (hours > 0) return `${hours}h ${minutes % 60}m ${seconds % 60}s`;
-    if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
-    return `${seconds}s`;
-  }
-
-  private initWebSocketMonitor(): void {
-    this.wsConnectionState.set('connected');
-
-    if (typeof window !== 'undefined') {
-      window.addEventListener('webui:status', ((event: CustomEvent) => {
-        const detail = event.detail;
-        if (detail?.state) {
-          this.wsConnectionState.set(detail.state);
-        }
-        if (detail?.detail?.port) {
-          this.wsPort.set(String(detail.detail.port));
-        }
-        if (detail?.detail?.error) {
-          this.wsLastError.set(detail.detail.error);
-        }
-      }) as EventListener);
-    }
-  }
-
-  minimizedWindowCount(): number {
-    return this.windowEntries().filter(entry => entry.minimized).length;
   }
 
   closeAllWindows(event?: Event): void {
@@ -203,21 +80,11 @@ export class AppComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.windowState.init();
-    this.initWebSocketMonitor();
-    this.appReadyUnsubscribe = this.eventBus.subscribe(
-      'app:ready',
-      (payload: unknown) => {
-        const p = payload as { timestamp: number };
-        this.logger.info('Received app ready event', { timestamp: p.timestamp });
-      },
-      { replayLast: true }
-    );
     this.closeAllBoxes();
 
-    // Verify WinBox is available - check both service and direct window access
+    // Verify WinBox is available
     const winboxAvailable = this.winboxService.isAvailable() || !!(window as any).WinBox;
 
-    // Add debug info to document for troubleshooting
     if (typeof document !== 'undefined') {
       (window as any).__WINBOX_DEBUG = {
         serviceHasIt: this.winboxService.isAvailable(),
@@ -228,7 +95,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
       if (!winboxAvailable) {
         this.logger.error('WinBox is NOT available! window.WinBox =', (window as any).WinBox);
-        // Create visible debug element
         const debugDiv = document.createElement('div');
         debugDiv.style.cssText =
           'position:fixed;top:0;left:0;background:red;color:white;padding:10px;z-index:99999;font-family:monospace;';
@@ -248,11 +114,10 @@ export class AppComponent implements OnInit, OnDestroy {
       window.addEventListener('resize', this.resizeHandler);
     }
 
-    this.logger.info('App component initialized', { cardsCount: this.cards.length });
+    this.logger.info('App component initialized');
   }
 
   ngOnDestroy(): void {
-    this.appReadyUnsubscribe?.();
     if (typeof window !== 'undefined' && this.resizeHandler) {
       window.removeEventListener('resize', this.resizeHandler);
       this.resizeHandler = null;
@@ -261,18 +126,15 @@ export class AppComponent implements OnInit, OnDestroy {
 
   closeAllBoxes(): void {
     this.logger.info('Closing all WinBox windows', { count: this.existingBoxes.length });
-    
-    // Method 1: Use WinBox's built-in close method for each window
+
     const boxesToClose = [...this.existingBoxes];
-    
+
     for (const box of boxesToClose) {
       if (box) {
         try {
-          // Restore if minimized
           if (box.min) {
             box.restore();
           }
-          // Focus and close
           box.focus();
           box.close(true);
         } catch (error) {
@@ -280,13 +142,11 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
     }
-    
-    // Method 2: Direct DOM cleanup - remove all WinBox elements from DOM
-    // This ensures windows are actually removed even if close() didn't work
+
     setTimeout(() => {
       const winboxElements = document.querySelectorAll('.winbox');
       this.logger.debug('Found WinBox DOM elements to remove', { count: winboxElements.length });
-      
+
       winboxElements.forEach((el) => {
         try {
           el.remove();
@@ -295,8 +155,7 @@ export class AppComponent implements OnInit, OnDestroy {
           this.logger.error('Error removing WinBox DOM element', { error });
         }
       });
-      
-      // Also remove any WinBox body elements that might remain
+
       const winboxBodyElements = document.querySelectorAll('.winbox-body');
       winboxBodyElements.forEach((el) => {
         try {
@@ -305,51 +164,33 @@ export class AppComponent implements OnInit, OnDestroy {
           // Ignore errors
         }
       });
-      
-      // Clear all state
+
       this.existingBoxes = [];
       this.windowEntries.set([]);
-      this.windowIdByCardId.clear();
-      
-      this.logger.info('All windows closed and DOM cleaned up', { 
+      this.logger.info('All windows closed and DOM cleaned up', {
         remainingBoxes: this.existingBoxes.length,
-        remainingEntries: this.windowEntries().length 
+        remainingEntries: this.windowEntries().length
       });
     }, 50);
   }
 
-  openCard(card: Card): void {
-    this.logger.info('Card clicked', { id: card.id, title: card.title });
-
-    // Check for existing window
-    const existingWindowId = this.windowIdByCardId.get(card.id);
-    if (existingWindowId) {
-      const existingBox = this.existingBoxes.find(box => box?.__windowId === existingWindowId);
-      if (existingBox) {
-        this.logger.info('Focusing existing window', { windowId: existingWindowId });
-        if (existingBox.min) existingBox.restore();
-        existingBox.focus();
-        this.applyMaximizedState(existingBox);
-        this.markWindowFocused(existingWindowId);
-        this.eventBus.publish('window:refocused', { id: existingWindowId, title: card.title });
-        return;
-      }
+  openAuthWindow(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
     }
-
-    const windowId = `card-${card.id}`;
-    this.logger.info('Attempting to create WinBox window', {
-      windowId,
-      title: card.title,
-      hasWinBoxOnWindow: !!(window as any).WinBox,
-      serviceAvailable: this.winboxService.isAvailable(),
-    });
-
-    // Create window using a more robust approach
-    this.createWinBoxWindow(windowId, card);
+    this.logger.info('Opening auth window');
+    this.createWindow(this.authWindowId, '🔐 Authentication', 'auth');
   }
 
-  private createWinBoxWindow(windowId: string, card: Card): void {
-    // Ensure WinBox is available
+  openSqliteWindow(event?: Event): void {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.logger.info('Opening SQLite window');
+    this.createWindow(this.sqliteWindowId, '🗄️ SQLite CRUD', 'sqlite');
+  }
+
+  private createWindow(windowId: string, title: string, type: 'auth' | 'sqlite'): void {
     const WinBoxConstructor = (window as any).WinBox;
 
     if (!WinBoxConstructor) {
@@ -358,24 +199,42 @@ export class AppComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Check for existing window
+    const existingBox = this.existingBoxes.find(box => box?.__windowId === windowId);
+    if (existingBox) {
+      this.logger.info('Focusing existing window', { windowId });
+      if (existingBox.min) existingBox.restore();
+      existingBox.focus();
+      this.applyMaximizedState(existingBox);
+      this.markWindowFocused(windowId, title);
+      return;
+    }
+
     try {
-      this.logger.info('Creating WinBox instance...', { windowId });
+      this.logger.info('Creating WinBox instance...', { windowId, type });
 
-      // Calculate available viewport respecting top and bottom panels
       const viewport = this.getAvailableViewport();
+      const windowWidth = Math.min(500, viewport.width);
+      const windowHeight = type === 'auth' ? Math.min(700, viewport.height) : Math.min(650, viewport.height);
+      const x = viewport.left + (viewport.width - windowWidth) / 2;
+      const y = viewport.top + (viewport.height - windowHeight) / 2;
 
-      // Create the window with calculated bounds
+      // Create the window
       const box = new WinBoxConstructor({
         id: windowId,
-        title: `${card.icon} ${card.title}`,
-        background: card.color,
-        width: `${viewport.width}px`,
-        height: `${viewport.height}px`,
-        x: `${viewport.left}px`,
-        y: `${viewport.top}px`,
-        minwidth: 300,
-        minheight: 200,
-        html: `<div style="padding: 24px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; height: calc(100% - 40px); overflow: auto; box-sizing: border-box; background: #fafafa;">${card.content}</div>`,
+        title: title,
+        background: type === 'auth' 
+          ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+          : 'linear-gradient(135deg, #00b09b 0%, #96c93d 100%)',
+        width: `${windowWidth}px`,
+        height: `${windowHeight}px`,
+        x: `${x}px`,
+        y: `${y}px`,
+        minwidth: 400,
+        minheight: type === 'auth' ? 500 : 450,
+        maxwidth: 600,
+        maxheight: 800,
+        html: `<div id="${type}-root-${windowId}" style="height: 100%; width: 100%;"></div>`,
       });
 
       if (!box) {
@@ -388,49 +247,34 @@ export class AppComponent implements OnInit, OnDestroy {
 
       // Store reference
       box.__windowId = windowId;
-      box.__cardTitle = card.title;
-      box.__cardId = card.id;
+      box.__cardTitle = title;
       this.existingBoxes.push(box);
-      this.windowIdByCardId.set(card.id, windowId);
 
-      // Add event handlers after creation
-      box.onfocus = () => this.markWindowFocused(windowId);
-      box.onblur = () => this.windowState.sendStateChange(windowId, 'blurred', card.title);
-      box.onminimize = () => this.markWindowMinimized(windowId);
+      // Add event handlers
+      box.onfocus = () => this.markWindowFocused(windowId, title);
+      box.onblur = () => this.windowState.sendStateChange(windowId, 'blurred', title);
+      box.onminimize = () => this.markWindowMinimized(windowId, title);
       box.onmaximize = () => {
         (box as any).__isMaximized = true;
         this.applyMaximizedState(box);
-        this.windowState.sendStateChange(windowId, 'maximized', card.title);
+        this.windowState.sendStateChange(windowId, 'maximized', title);
       };
       box.onrestore = () => {
         (box as any).__isMaximized = false;
-        this.windowState.sendStateChange(windowId, 'restored', card.title);
+        this.windowState.sendStateChange(windowId, 'restored', title);
       };
       box.onclose = () => {
-        const windowId = box.__windowId;
         this.logger.debug('WinBox onclose triggered', { id: windowId });
-        
-        // Remove from existingBoxes array
+
         const index = this.existingBoxes.indexOf(box);
         if (index > -1) {
           this.existingBoxes.splice(index, 1);
-          this.logger.debug('Removed from existingBoxes', { id: windowId, remainingCount: this.existingBoxes.length });
         }
-        
-        // Delete from mapping
-        if (box.__cardId !== undefined) {
-          this.windowIdByCardId.delete(box.__cardId);
-        }
-        
-        // Publish event
-        this.eventBus.publish('window:closed', { id: windowId, title: box.__cardTitle });
-        
-        // Send state change
-        this.windowState.sendStateChange(windowId, 'closed', box.__cardTitle || 'Unknown');
-        
-        // Update window entries
+
+        this.eventBus.publish('window:closed', { id: windowId, title });
+        this.windowState.sendStateChange(windowId, 'closed', title);
         this.windowEntries.update(entries => entries.filter(entry => entry.id !== windowId));
-        
+
         this.logger.debug('Window close cleanup complete', { id: windowId });
         return true;
       };
@@ -440,15 +284,15 @@ export class AppComponent implements OnInit, OnDestroy {
         ...entries.map(e => ({ ...e, focused: false })),
         {
           id: windowId,
-          title: card.title,
+          title: title,
           minimized: false,
           focused: true,
         },
       ]);
-      this.eventBus.publish('window:opened', { id: windowId, title: card.title });
-      this.windowState.sendStateChange(windowId, 'focused', card.title);
+      this.eventBus.publish('window:opened', { id: windowId, title });
+      this.windowState.sendStateChange(windowId, 'focused', title);
 
-      // Maximize after a short delay
+      // Apply maximized state
       setTimeout(() => {
         this.applyMaximizedState(box);
       }, 50);
@@ -477,52 +321,50 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  /**
-   * Calculate available viewport respecting top and bottom panel states
-   */
   private getAvailableViewport(): { left: number; top: number; width: number; height: number } {
     const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 600;
     const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 800;
 
-    // Calculate top panel height (smaller compact design)
     let topOffset = 0;
     if (this.topCollapsed()) {
-      topOffset = 40; // Collapsed height
+      topOffset = 40;
     } else {
-      topOffset = 40 + 40; // Bar + content (40px bar + ~40px content)
+      topOffset = 40 + 40;
     }
 
-    // Calculate bottom panel height (smaller compact design)
     let bottomOffset = 0;
     if (this.bottomCollapsed()) {
-      bottomOffset = 40; // Collapsed height
+      bottomOffset = 40;
     } else {
-      bottomOffset = 40 + 90; // Bar + expanded content (40px bar + ~90px content)
+      bottomOffset = 40 + 60;
     }
 
-    // Add padding to prevent titlebar overlap
-    const topPadding = 4; // Small gap below top panel
-    const bottomPadding = 4; // Small gap above bottom panel
+    const topPadding = 4;
+    const bottomPadding = 4;
 
     const availableHeight = windowHeight - topOffset - bottomOffset - topPadding - bottomPadding;
-    const availableWidth = windowWidth - 20; // Small side padding
+    const availableWidth = windowWidth - 20;
 
     return {
       left: 10,
       top: topOffset + topPadding,
       width: availableWidth,
-      height: Math.max(200, availableHeight), // Minimum height
+      height: Math.max(200, availableHeight),
     };
   }
 
   private applyMaximizedState(box: WinBoxInstance): void {
-    // Use setTimeout to ensure WinBox's native maximize completes first
     setTimeout(() => {
       try {
-        // Recalculate viewport and resize window to fit between panels
         const viewport = this.getAvailableViewport();
-        box.move(`${viewport.left}px`, `${viewport.top}px`);
-        box.resize(`${viewport.width}px`, `${viewport.height}px`);
+        const isSqlite = box.__cardTitle?.includes('SQLite');
+        const windowWidth = Math.min(500, viewport.width);
+        const windowHeight = isSqlite ? Math.min(650, viewport.height) : Math.min(700, viewport.height);
+        const x = viewport.left + (viewport.width - windowWidth) / 2;
+        const y = viewport.top + (viewport.height - windowHeight) / 2;
+        
+        box.move(`${x}px`, `${y}px`);
+        box.resize(`${windowWidth}px`, `${windowHeight}px`);
       } catch {
         // Ignore resize errors
       }
@@ -538,25 +380,13 @@ export class AppComponent implements OnInit, OnDestroy {
     }
     if (box.min) box.restore();
     box.focus();
-    // Apply maximized state if window was maximized
     if ((box as any).__isMaximized) {
       this.applyMaximizedState(box);
     }
     this.eventBus.publish('window:focused', { id: windowId });
   }
 
-  showMainMenu(event: Event): void {
-    event.stopPropagation();
-    this.existingBoxes.forEach(box => {
-      if (box && !box.min) box.minimize(true);
-    });
-    this.windowEntries.update(entries =>
-      entries.map(entry => ({ ...entry, minimized: true, focused: false }))
-    );
-    this.eventBus.publish('window:home-selected', { count: this.existingBoxes.length });
-  }
-
-  private markWindowFocused(windowId: string): void {
+  private markWindowFocused(windowId: string, title: string): void {
     this.eventBus.publish('window:focused', { id: windowId });
     this.windowEntries.update(entries =>
       entries.map(entry => ({
@@ -565,42 +395,32 @@ export class AppComponent implements OnInit, OnDestroy {
         minimized: entry.id === windowId ? false : entry.minimized,
       }))
     );
-    this.windowState.sendStateChange(windowId, 'focused', this.getWindowTitle(windowId));
+    this.windowState.sendStateChange(windowId, 'focused', title);
   }
 
-  private markWindowMinimized(windowId: string): void {
+  private markWindowMinimized(windowId: string, title: string): void {
     this.eventBus.publish('window:minimized', { id: windowId });
     this.windowEntries.update(entries =>
       entries.map(entry =>
         entry.id === windowId ? { ...entry, minimized: true, focused: false } : entry
       )
     );
-    this.windowState.sendStateChange(windowId, 'minimized', this.getWindowTitle(windowId));
-  }
-
-  private getWindowTitle(windowId: string): string {
-    const entry = this.windowEntries().find(e => e.id === windowId);
-    return entry?.title ?? 'Unknown';
-  }
-
-  private getAvailableWindowRect(): { top: number; height: number; width: number; left: number } {
-    const viewport = this.getAvailableViewport();
-    return {
-      top: viewport.top,
-      height: viewport.height,
-      width: viewport.width,
-      left: viewport.left,
-    };
+    this.windowState.sendStateChange(windowId, 'minimized', title);
   }
 
   private resizeAllWindows(): void {
-    const rect = this.getAvailableWindowRect();
+    const viewport = this.getAvailableViewport();
     this.existingBoxes.forEach((box: any) => {
       if (box && !box.min) {
         try {
-          // Always apply the current available rect (respects panel heights)
-          box.resize(`${rect.width}px`, `${rect.height}px`);
-          box.move(`${rect.top}px`, `${rect.left}px`);
+          const isSqlite = box.__cardTitle?.includes('SQLite');
+          const windowWidth = Math.min(500, viewport.width);
+          const windowHeight = isSqlite ? Math.min(650, viewport.height) : Math.min(700, viewport.height);
+          const x = viewport.left + (viewport.width - windowWidth) / 2;
+          const y = viewport.top + (viewport.height - windowHeight) / 2;
+          
+          box.move(`${x}px`, `${y}px`);
+          box.resize(`${windowWidth}px`, `${windowHeight}px`);
         } catch {
           // Ignore resize errors
         }

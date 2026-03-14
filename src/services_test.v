@@ -506,108 +506,178 @@ fn test_health_check_service_run_all() {
 
 fn test_auth_service_init() {
 	println('Testing: test_auth_service_init')
-	
+
 	mut service := new_auth_service()
 	result := service.init()
-	
+
 	assert result == true, 'Init should succeed'
 	assert service.is_initialized() == true, 'Should be initialized'
 	assert service.name() == 'auth', 'Name should be auth'
-	
+
 	println('  ✓ PASSED: test_auth_service_init')
 }
 
 fn test_auth_service_register_user() {
 	println('Testing: test_auth_service_register_user')
-	
+
 	mut service := new_auth_service()
 	service.init()
-	
-	success := service.register_user('testuser', 'password123', 'test @example.com')
+
+	// SEC-001: Use strong password
+	success := service.register_user('testuser', 'SecurePass123!', 'test @example.com')
 	assert success == true, 'Registration should succeed'
-	
+
 	// Try to register same user again
-	success2 := service.register_user('testuser', 'password123', 'test @example.com')
+	success2 := service.register_user('testuser', 'SecurePass123!', 'test @example.com')
 	assert success2 == false, 'Duplicate registration should fail'
-	
+
+	// SEC-001: Weak password should fail
+	weak_success := service.register_user('weakuser', 'weak', 'weak @example.com')
+	assert weak_success == false, 'Weak password should fail'
+
 	println('  ✓ PASSED: test_auth_service_register_user')
 }
 
 fn test_auth_service_authenticate() {
 	println('Testing: test_auth_service_authenticate')
-	
+
 	mut service := new_auth_service()
 	service.init()
-	
-	service.register_user('testuser', 'password123', 'test @example.com')
-	
-	result := service.authenticate('testuser', 'password123') or {
+
+	// SEC-001: Use strong password
+	service.register_user('testuser', 'SecurePass123!', 'test @example.com')
+
+	result := service.authenticate('testuser', 'SecurePass123!') or {
 		assert false, 'Authentication should succeed'
 		return
 	}
-	
+
 	assert result.success == true, 'Should be successful'
 	assert result.username == 'testuser', 'Username should match'
 	assert result.token != '', 'Should have token'
-	
+	assert result.token.starts_with('tok_'), 'Token should have secure prefix'
+
+	// SEC-001: Wrong password should fail
+	wrong_result := service.authenticate('testuser', 'WrongPassword123!')
+	assert wrong_result is error, 'Wrong password should fail'
+
 	println('  ✓ PASSED: test_auth_service_authenticate')
 }
 
 fn test_auth_service_token_validation() {
 	println('Testing: test_auth_service_token_validation')
-	
+
 	mut service := new_auth_service()
 	service.init()
-	
-	service.register_user('testuser', 'password123', 'test @example.com')
-	result := service.authenticate('testuser', 'password123') or {
+
+	service.register_user('testuser', 'SecurePass123!', 'test @example.com')
+	result := service.authenticate('testuser', 'SecurePass123!') or {
 		assert false, 'Authentication should succeed'
 		return
 	}
-	
+
+	// SEC-002: Token should be cryptographically secure (long enough)
+	assert result.token.len > 60, 'Token should be sufficiently long'
+
 	// Validate token
 	validated := service.validate_token(result.token) or {
 		assert false, 'Token validation should succeed'
 		return
 	}
-	
+
 	assert validated.success == true, 'Should be valid'
 	assert validated.user_id == result.user_id, 'User ID should match'
-	
+
 	// Revoke token
 	revoked := service.revoke_token(result.token)
 	assert revoked == true, 'Revocation should succeed'
-	
+
 	// Try to validate revoked token
 	revoked_result := service.validate_token(result.token)
 	assert revoked_result is error, 'Revoked token should be invalid'
-	
+
 	println('  ✓ PASSED: test_auth_service_token_validation')
 }
 
 fn test_auth_service_permissions() {
 	println('Testing: test_auth_service_permissions')
-	
+
 	mut service := new_auth_service()
 	service.init()
-	
-	service.register_user('testuser', 'password123', 'test @example.com')
-	service.authenticate('testuser', 'password123')
+
+	service.register_user('testuser', 'SecurePass123!', 'test @example.com')
+	service.authenticate('testuser', 'SecurePass123!')
 	service.set_current_user('testuser')
-	
+
 	// Check default permissions
 	has_read := service.has_permission('read')
 	assert has_read == true, 'Should have read permission'
-	
+
 	has_admin := service.has_permission('admin')
 	assert has_admin == false, 'Should not have admin permission'
-	
+
 	// Add permission
 	service.add_permission_to_user('testuser', 'admin')
 	has_admin2 := service.has_permission('admin')
 	assert has_admin2 == true, 'Should have admin permission after adding'
-	
+
 	println('  ✓ PASSED: test_auth_service_permissions')
+}
+
+// SEC-001: Test password hashing
+fn test_auth_service_password_hashing() {
+	println('Testing: test_auth_service_password_hashing')
+
+	mut service := new_auth_service()
+	service.init()
+
+	// Register user with strong password
+	service.register_user('hashuser', 'SecurePass123!', 'hash @example.com')
+
+	// Get user and verify password is hashed
+	user := service.get_user('hashuser') or {
+		assert false, 'User should exist'
+		return
+	}
+
+	// SEC-001: Password should be hashed (not plaintext)
+	assert user.password_hash != 'SecurePass123!', 'Password should not be stored in plaintext'
+	assert user.password_hash.len > 30, 'Hash should be sufficiently long'
+	assert user.password_hash.starts_with('$'), 'Hash should have salt prefix'
+
+	println('  ✓ PASSED: test_auth_service_password_hashing')
+}
+
+// SEC-006: Test CSRF token generation
+fn test_auth_service_csrf_tokens() {
+	println('Testing: test_auth_service_csrf_tokens')
+
+	mut service := new_auth_service()
+	service.init()
+
+	// Generate CSRF token
+	token := service.generate_csrf_token('user123') or {
+		assert false, 'CSRF token generation should succeed'
+		return
+	}
+
+	assert token.starts_with('csrf_'), 'CSRF token should have correct prefix'
+	assert token.len > 60, 'CSRF token should be sufficiently long'
+
+	// Validate CSRF token
+	is_valid := service.validate_csrf_token(token, 'user123')
+	assert is_valid == true, 'CSRF token should be valid'
+
+	// Wrong user should fail
+	is_valid_wrong := service.validate_csrf_token(token, 'wronguser')
+	assert is_valid_wrong == false, 'CSRF token should be user-specific'
+
+	// Invalidate token
+	service.invalidate_csrf_token(token)
+	is_valid_after := service.validate_csrf_token(token, 'user123')
+	assert is_valid_after == false, 'CSRF token should be invalid after invalidation'
+
+	println('  ✓ PASSED: test_auth_service_csrf_tokens')
 }
 
 // Run all service tests
@@ -617,12 +687,12 @@ pub fn run_all_tests() {
 	println('Running Service Tests')
 	println('========================================')
 	println('')
-	
+
 	// ConfigService tests
 	test_config_service_init()
 	test_config_service_set_get()
 	test_config_service_get_all()
-	
+
 	// CacheService tests
 	test_cache_service_init()
 	test_cache_service_set_get()
@@ -630,14 +700,14 @@ pub fn run_all_tests() {
 	test_cache_service_clear()
 	test_cache_service_ttl()
 	test_cache_service_stats()
-	
+
 	// ValidationService tests
 	test_validation_service_init()
 	test_validation_service_required()
 	test_validation_service_min_max()
 	test_validation_service_email()
 	test_validation_service_numeric()
-	
+
 	// MetricsService tests
 	test_metrics_service_init()
 	test_metrics_service_counter()
@@ -645,24 +715,26 @@ pub fn run_all_tests() {
 	test_metrics_service_histogram()
 	test_metrics_service_timing()
 	test_metrics_service_reset()
-	
+
 	// LoggerService tests
 	test_logger_service_init()
 	test_logger_service_levels()
 	test_logger_service_log_count()
-	
+
 	// HealthCheckService tests
 	test_health_check_service_init()
 	test_health_check_service_register()
 	test_health_check_service_run_all()
-	
+
 	// AuthService tests
 	test_auth_service_init()
 	test_auth_service_register_user()
 	test_auth_service_authenticate()
 	test_auth_service_token_validation()
 	test_auth_service_permissions()
-	
+	test_auth_service_password_hashing()      // SEC-001
+	test_auth_service_csrf_tokens()           // SEC-006
+
 	println('')
 	println('========================================')
 	println('All Service Tests Passed!')
