@@ -10,3 +10,4 @@ export { ClipboardService } from './clipboard.service';
 export { NetworkMonitorService } from './network-monitor.service';
 export { WinBoxService } from './winbox.service';
 export { DevToolsService } from './devtools.service';
+export { CommunicationService } from './communication.service';
