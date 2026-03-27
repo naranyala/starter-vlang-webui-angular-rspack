@@ -4,8 +4,19 @@ build/
 *.exe
 *.o
 
+.build_cache
+
 frontend/node_modules
 frontend/dist
+frontend/.angular
+
+frontend-legacy/node_modules
+frontend-legacy/dist
+frontend-legacy/.angular
+
+*/node_modules/*
+
+thirdparty/*
 
 # V
 .vpkg/

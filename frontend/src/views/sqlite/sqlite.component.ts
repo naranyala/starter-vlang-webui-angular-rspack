@@ -2,8 +2,8 @@ import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LoggerService } from '../../core/logger.service';
-import { NotificationService } from '../../core/notification.service';
 import { ApiService } from '../../core/api.service';
+import { RequestBuilder, isValidEmail, isValidString, isValidNumberRange } from '../../app/shared/serialization';
 
 export interface User {
   id: number;
@@ -101,15 +101,15 @@ export interface UserStats {
             <form class="user-form" (ngSubmit)="createUser()">
               <div class="form-group">
                 <label class="form-label">Name</label>
-                <input type="text" class="form-input" [(ngModel)]="newUser.name" name="name" required />
+                <input type="text" class="form-input" [ngModel]="newUserForm.name" (ngModelChange)="updateNewUser('name', $event)" name="name" required />
               </div>
               <div class="form-group">
                 <label class="form-label">Email</label>
-                <input type="email" class="form-input" [(ngModel)]="newUser.email" name="email" required />
+                <input type="email" class="form-input" [ngModel]="newUserForm.email" (ngModelChange)="updateNewUser('email', $event)" name="email" required />
               </div>
               <div class="form-group">
                 <label class="form-label">Age</label>
-                <input type="number" class="form-input" [(ngModel)]="newUser.age" name="age" required min="1" max="150" />
+                <input type="number" class="form-input" [ngModel]="newUserForm.age" (ngModelChange)="updateNewUser('age', $event)" name="age" required min="1" max="150" />
               </div>
               <button type="submit" class="submit-button" [disabled]="isLoading()">
                 {{ isLoading() ? 'Creating...' : 'Create User' }}
@@ -161,7 +161,6 @@ export interface UserStats {
 })
 export class SqliteCrudComponent {
   private readonly logger = inject(LoggerService);
-  private readonly notifications = inject(NotificationService);
   private readonly api = inject(ApiService);
 
   activeTab = signal<'list' | 'create'>('list');
@@ -172,6 +171,14 @@ export class SqliteCrudComponent {
   searchQuery = '';
 
   newUser = signal<Partial<User>>({ name: '', email: '', age: 25 });
+
+  get newUserForm() {
+    return this.newUser();
+  }
+
+  updateNewUser(field: keyof User, value: string | number) {
+    this.newUser.update(u => ({ ...u, [field]: value }));
+  }
 
   setActiveTab(tab: 'list' | 'create'): void {
     this.activeTab.set(tab);
@@ -205,28 +212,43 @@ export class SqliteCrudComponent {
       this.stats.set(stats);
       this.filterUsers();
     } catch (error) {
-      this.notifications.error('Failed to load users');
-      this.logger.error('Load users error', error);
+      this.logger.error('Failed to load users', error);
     } finally {
       this.isLoading.set(false);
     }
   }
 
   async createUser(): Promise<void> {
-    if (!this.newUser().name || !this.newUser().email || !this.newUser().age) {
-      this.notifications.error('Please fill in all fields');
+    const user = this.newUser();
+    
+    // Validate before sending
+    if (!isValidString(user.name)) {
+      this.logger.warn('Validation failed: Name is required');
+      return;
+    }
+    if (!isValidEmail(user.email)) {
+      this.logger.warn('Validation failed: Invalid email');
+      return;
+    }
+    if (!isValidNumberRange(user.age, 1, 150)) {
+      this.logger.warn('Validation failed: Age must be between 1 and 150');
       return;
     }
 
     this.isLoading.set(true);
     try {
-      await this.api.callOrThrow('createUser', [this.newUser()]);
-      this.notifications.success('User created successfully');
+      // Use RequestBuilder for standardized serialization
+      const request = RequestBuilder.createUser(
+        user.name || '',
+        user.email || '',
+        user.age || 25
+      );
+      await this.api.callOrThrow('createUser', [request]);
+      this.logger.info('User created successfully');
       this.newUser.set({ name: '', email: '', age: 25 });
       this.setActiveTab('list');
     } catch (error) {
-      this.notifications.error('Failed to create user');
-      this.logger.error('Create user error', error);
+      this.logger.error('Failed to create user', error);
     } finally {
       this.isLoading.set(false);
     }
@@ -245,12 +267,13 @@ export class SqliteCrudComponent {
 
     this.isLoading.set(true);
     try {
-      await this.api.callOrThrow('deleteUser', [user.id]);
-      this.notifications.success('User deleted');
+      // Use RequestBuilder for standardized serialization
+      const request = RequestBuilder.delete(user.id);
+      await this.api.callOrThrow('deleteUser', [request]);
+      this.logger.info('User deleted');
       await this.loadUsers();
     } catch (error) {
-      this.notifications.error('Failed to delete user');
-      this.logger.error('Delete user error', error);
+      this.logger.error('Failed to delete user', error);
     } finally {
       this.isLoading.set(false);
     }
