@@ -1,103 +1,51 @@
 module main
 
-
-
 // ============================================================================
 // API Response Helpers
-// Simplified approach for V 0.5.1 compatibility
+// Simple JSON response construction
 // ============================================================================
 
-// Create success response with data
-pub fn success_response(data_str string) string {
-	return '{"success":true,"data":${data_str}}'
+// success_response creates a success response with JSON data string
+pub fn success_response(data string) string {
+	return '{"success":true,"data":${data}}'
 }
 
-// Create error response
+// error_response creates an error response
 pub fn error_response(msg string) string {
 	return '{"success":false,"error":"${msg}"}'
 }
 
-// Create success response with message (no data)
+// message_response creates a message-only response
 pub fn message_response(msg string) string {
 	return '{"success":true,"message":"${msg}"}'
 }
 
-// ============================================================================
-// Request DTOs (Data Transfer Objects)
-// Type-safe request structures for validation
-// ============================================================================
-
-// User requests
-pub struct CreateUserRequest {
-pub:
-	name  string
-	email string
-	age   int
+// ok creates a success response with JSON-encoded data
+pub fn ok(data string) string {
+	return '{"success":true,"data":${data}}'
 }
 
-pub struct UpdateUserRequest {
-pub:
-	id    int
-	name  string
-	email string
-	age   int
+// created creates a 201-style success response
+pub fn created(data string) string {
+	return '{"success":true,"data":${data},"message":"Resource created"}'
 }
 
-pub struct DeleteUserRequest {
-pub:
-	id int
+// bad_request creates an error response for invalid requests
+pub fn bad_request(msg string) string {
+	return '{"success":false,"error":"${msg}"}'
 }
 
-// Product requests
-pub struct CreateProductRequest {
-pub:
-	name        string
-	description string
-	price       f64
-	stock       int
-	category    string
+// not_found creates an error response for missing resources
+pub fn not_found(resource string) string {
+	return '{"success":false,"error":"${resource} not found"}'
 }
 
-pub struct UpdateProductRequest {
-pub:
-	id          int
-	name        string
-	description string
-	price       f64
-	stock       int
-	category    string
+// validation_error creates an error response for validation failures
+pub fn validation_error(msg string) string {
+	return '{"success":false,"error":"Validation failed: ${msg}"}'
 }
 
-pub struct DeleteProductRequest {
-pub:
-	id int
-}
-
-// Order requests
-pub struct CreateOrderRequest {
-pub:
-	user_id   int
-	user_name string
-	total     f64
-	status    string
-}
-
-pub struct UpdateOrderRequest {
-pub:
-	id     int
-	status string
-}
-
-pub struct DeleteOrderRequest {
-pub:
-	id int
-}
-
-// ============================================================================
-// Request Parsing Helpers
-// ============================================================================
-
-// Validate email format
-pub fn validate_email(email string) bool {
-	return email.contains('@') && email.contains('.')
+// server_error creates an error response for internal errors
+pub fn server_error() string {
+	return '{"success":false,"error":"Internal server error"}'
 }

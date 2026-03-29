@@ -190,26 +190,6 @@ const config = {
       'process.env.NODE_ENV': JSON.stringify(isProd ? 'production' : 'development'),
       'process.env.CI': JSON.stringify(process.env.CI || 'false'),
     }),
-
-    // Post-build patch for webui.js (production only)
-    ...(isProd ? [
-      {
-        apply: (compiler) => {
-          compiler.hooks.done.tap('PatchWebUIPlugin', () => {
-            const { execSync } = require('child_process');
-            try {
-              console.log('[PatchWebUI] Running post-build patch...');
-              execSync('node scripts/patch-webui.js', {
-                stdio: 'inherit',
-                cwd: __dirname,
-              });
-            } catch (error) {
-              console.error('[PatchWebUI] Failed to patch HTML:', error.message);
-            }
-          });
-        },
-      },
-    ] : []),
   ],
 
   // Optimization settings

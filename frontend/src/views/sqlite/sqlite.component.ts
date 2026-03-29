@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LoggerService } from '../../core/logger.service';
 import { ApiService } from '../../core/api.service';
-import { RequestBuilder, isValidEmail, isValidString, isValidNumberRange } from '../../app/shared/serialization';
 
 export interface User {
   id: number;
@@ -219,31 +218,14 @@ export class SqliteCrudComponent {
   }
 
   async createUser(): Promise<void> {
-    const user = this.newUser();
-    
-    // Validate before sending
-    if (!isValidString(user.name)) {
-      this.logger.warn('Validation failed: Name is required');
-      return;
-    }
-    if (!isValidEmail(user.email)) {
-      this.logger.warn('Validation failed: Invalid email');
-      return;
-    }
-    if (!isValidNumberRange(user.age, 1, 150)) {
-      this.logger.warn('Validation failed: Age must be between 1 and 150');
+    if (!this.newUser().name || !this.newUser().email || !this.newUser().age) {
+      this.logger.warn('Create user validation failed');
       return;
     }
 
     this.isLoading.set(true);
     try {
-      // Use RequestBuilder for standardized serialization
-      const request = RequestBuilder.createUser(
-        user.name || '',
-        user.email || '',
-        user.age || 25
-      );
-      await this.api.callOrThrow('createUser', [request]);
+      await this.api.callOrThrow('createUser', [this.newUser()]);
       this.logger.info('User created successfully');
       this.newUser.set({ name: '', email: '', age: 25 });
       this.setActiveTab('list');
@@ -267,9 +249,7 @@ export class SqliteCrudComponent {
 
     this.isLoading.set(true);
     try {
-      // Use RequestBuilder for standardized serialization
-      const request = RequestBuilder.delete(user.id);
-      await this.api.callOrThrow('deleteUser', [request]);
+      await this.api.callOrThrow('deleteUser', [user.id]);
       this.logger.info('User deleted');
       await this.loadUsers();
     } catch (error) {

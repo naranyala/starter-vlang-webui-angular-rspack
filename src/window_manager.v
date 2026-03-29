@@ -269,11 +269,6 @@ pub fn (al AppLifecycle) get_uptime() i64 {
 	return time.now().unix() - al.start_time
 }
 
-// Is_initialized checks if the application is initialized
-pub fn (al AppLifecycle) is_initialized() bool {
-	return al.initialized
-}
-
 // Is_running checks if the application is still running
 pub fn (al AppLifecycle) is_running() bool {
 	return al.shutdown.is_running()
