@@ -1,63 +1,87 @@
+/**
+ * Notification Service
+ * Provides toast notifications for user feedback
+ */
+
 import { Injectable, signal } from '@angular/core';
 
 export interface Notification {
   id: string;
-  type: 'success' | 'error' | 'warning' | 'info';
+  type: 'success' | 'error' | 'info' | 'warning';
   message: string;
   duration?: number;
 }
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class NotificationService {
-  private notifications = signal<Notification[]>([]);
+  private readonly defaultDuration = 4000;
 
-  readonly notifications$ = this.notifications.asReadonly();
+  notifications = signal<Notification[]>([]);
 
-  show(type: Notification['type'], message: string, duration = 3000): void {
-    const id = crypto.randomUUID();
-    const notification: Notification = { id, type, message, duration };
-    this.notifications.update(list => [...list, notification]);
+  private generateId(): string {
+    return `notif_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
 
+  /**
+   * Show a notification
+   */
+  show(type: Notification['type'], message: string, duration: number = this.defaultDuration): void {
+    const notification: Notification = {
+      id: this.generateId(),
+      type,
+      message,
+      duration
+    };
+
+    this.notifications.update(notifs => [...notifs, notification]);
+
+    // Auto-dismiss
     if (duration > 0) {
-      setTimeout(() => this.dismiss(id), duration);
+      setTimeout(() => {
+        this.dismiss(notification.id);
+      }, duration);
     }
   }
 
+  /**
+   * Show success notification
+   */
   success(message: string, duration?: number): void {
     this.show('success', message, duration);
   }
 
+  /**
+   * Show error notification
+   */
   error(message: string, duration?: number): void {
     this.show('error', message, duration);
   }
 
-  warning(message: string, duration?: number): void {
-    this.show('warning', message, duration);
-  }
-
+  /**
+   * Show info notification
+   */
   info(message: string, duration?: number): void {
     this.show('info', message, duration);
   }
 
+  /**
+   * Show warning notification
+   */
+  warning(message: string, duration?: number): void {
+    this.show('warning', message, duration);
+  }
+
+  /**
+   * Dismiss a notification
+   */
   dismiss(id: string): void {
-    this.notifications.update(list => list.filter(n => n.id !== id));
+    this.notifications.update(notifs => notifs.filter(n => n.id !== id));
   }
 
-  clear(): void {
+  /**
+   * Dismiss all notifications
+   */
+  dismissAll(): void {
     this.notifications.set([]);
-  }
-
-  get items(): Notification[] {
-    return this.notifications();
-  }
-
-  getMetrics(): Record<string, number> {
-    const counts = this.notifications().reduce((acc, n) => {
-      acc[n.type] = (acc[n.type] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    return counts;
   }
 }

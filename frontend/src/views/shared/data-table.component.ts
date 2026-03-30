@@ -329,19 +329,19 @@ export interface DataTableConfig {
     }
   `]
 })
-export class DataTableComponent<T extends Record<string, unknown> = Record<string, unknown>> {
+export class DataTableComponent {
   private api = inject(ApiService);
   private logger = inject(LoggerService);
 
   @Input() config: DataTableConfig | null = null;
-  @Input() items: T[] = [];
-  @Output() itemsChange = new EventEmitter<T[]>();
+  @Input() items: any[] = [];
+  @Output() itemsChange = new EventEmitter<any[]>();
   @Output() statsChange = new EventEmitter<{ type: string; count: number }>();
 
-  filteredItems: T[] = [];
+  filteredItems: any[] = [];
   searchQuery = '';
   showModal = false;
-  editingItem: T | null = null;
+  editingItem: any = null;
   formData: Record<string, unknown> = {};
   isLoading = false;
 

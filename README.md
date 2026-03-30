@@ -1,36 +1,121 @@
-# Desktop Dashboard
+# DuckDB and SQLite CRUD Application
 
-A modern system monitoring and data management application built with V language backend and Angular frontend.
+A production-ready web application demonstrating CRUD (Create, Read, Update, Delete) operations with dual database backend support. Built with V language backend and Angular frontend, this application provides a complete solution for data management with either SQLite or DuckDB storage.
 
 ## Overview
 
-Desktop Dashboard provides a complete solution for system monitoring, data management, and CRUD operations. It features a secure backend with password hashing, CSRF protection, and rate limiting, paired with a modern Angular frontend using signals and standalone components.
+This application showcases enterprise-grade database integration patterns with two distinct storage backends:
 
-## Features
+- **SQLite**: A self-contained, serverless, transactional SQL database engine suitable for production workloads
+- **DuckDB**: An in-process analytical database optimized for fast queries with JSON persistence for demonstration purposes
 
-- System monitoring (CPU, Memory, Disk, Network)
-- Process management
-- SQLite and DuckDB storage backends
-- Secure authentication with multi-round password hashing
-- CSRF protection for state-changing operations
-- Rate limiting for API endpoints
-- Modern Angular UI with WebUI window management
-- Responsive design with dark theme
+The application provides identical CRUD functionality regardless of the chosen backend, allowing developers to evaluate both options for their specific use cases.
 
 ## Technology Stack
 
 ### Backend
+
 - **Language**: V 0.5.1+
-- **Window Management**: WebUI
-- **Storage**: SQLite / JSON-based persistence
-- **Security**: Custom password hashing, CSRF tokens, rate limiting
+- **Database Drivers**: SQLite module, DuckDB JSON adapter
+- **Security**: Password hashing, CSRF protection, rate limiting
+- **Architecture**: Repository pattern with service layer abstraction
 
 ### Frontend
+
 - **Framework**: Angular 21
 - **Bundler**: Rspack
 - **Package Manager**: Bun
-- **Styling**: CSS with dark theme
+- **Visualization**: Vega-Lite for data charts
 - **State Management**: Angular Signals
+
+## Database Options
+
+### SQLite Backend
+
+SQLite is recommended for production deployments requiring:
+
+- ACID-compliant transactions
+- Concurrent read and write operations
+- Data persistence without configuration
+- Foreign key constraints and referential integrity
+- Standard SQL query support
+
+**Configuration:**
+
+```bash
+DB_TYPE=sqlite
+DB_PATH=data/app.db
+```
+
+**Characteristics:**
+
+- File-based relational database
+- Zero-configuration setup
+- Supports multiple concurrent readers
+- Single writer at a time
+- Automatic crash recovery
+- Suitable for applications up to terabytes of data
+
+### DuckDB Backend
+
+DuckDB with JSON persistence is suitable for:
+
+- Development and prototyping
+- Demonstrations and testing
+- Single-user applications
+- Analytical workloads
+- Quick iteration without schema migrations
+
+**Configuration:**
+
+```bash
+DB_TYPE=duckdb
+DB_PATH=data/duckdb_demo.json
+DB_DEMO_MODE=true
+```
+
+**Characteristics:**
+
+- In-memory storage with JSON file persistence
+- Fast analytical queries
+- Simple setup without dependencies
+- Automatic data serialization
+- Suitable for datasets up to millions of records
+
+## Features
+
+### Data Management
+
+- Complete CRUD operations for Users, Products, and Orders
+- Input validation at both client and server layers
+- Transaction support for related operations (SQLite)
+- Data export and import functionality
+- Statistics and aggregation queries
+
+### User Interface
+
+- Responsive dashboard with navigation menu
+- Interactive data tables with sorting and filtering
+- Modal-based forms for create and edit operations
+- Real-time search and filtering
+- Toast notifications for user feedback
+
+### Data Visualization
+
+- Bar charts for categorical comparison
+- Line charts for time series trends
+- Pie charts for part-to-whole relationships
+- Scatter plots for correlation analysis
+- Area charts for cumulative trends
+- Heatmaps for matrix visualization
+
+### Security
+
+- Input sanitization and validation
+- Rate limiting (60 requests per minute, 1000 per hour)
+- CORS configuration
+- Security headers (CSP, HSTS, X-Frame-Options)
+- Audit logging for security events
 
 ## Quick Start
 
@@ -38,48 +123,57 @@ Desktop Dashboard provides a complete solution for system monitoring, data manag
 
 - V Language 0.5.1 or higher
 - Bun 1.0 or higher
-- GCC 9.0 or higher
-- GTK3 + WebKit (Linux only)
+- GCC 9.0 or higher (for V compilation)
+- GTK3 and WebKit (Linux only, for WebUI)
 
 ### Installation
 
 1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd starter-vlang-webui-angular-rspack
-   ```
-
-2. Run the setup script:
-   ```bash
-   ./scripts/dev-setup.sh
-   ```
-
-3. Start development mode:
-   ```bash
-   ./run.sh dev
-   ```
-
-4. Access the application at `http://localhost:8080`
-
-### Manual Setup
-
-If the setup script fails, follow these steps:
 
 ```bash
-# Install backend dependencies
-v install
+git clone <repository-url>
+cd starter-vlang-webui-angular-rspack
+```
 
-# Install frontend dependencies
+2. Install backend dependencies:
+
+```bash
+v install
+```
+
+3. Install frontend dependencies:
+
+```bash
 cd frontend
 bun install
-
-# Copy environment configuration
 cd ..
-cp .env.example .env
-
-# Build the application
-./run.sh build
 ```
+
+4. Copy environment configuration:
+
+```bash
+cp .env.example .env
+```
+
+5. Configure your database preference in `.env`:
+
+```bash
+# For SQLite (Production)
+DB_TYPE=sqlite
+DB_PATH=data/app.db
+
+# For DuckDB (Development/Demo)
+DB_TYPE=duckdb
+DB_PATH=data/duckdb_demo.json
+```
+
+6. Start development mode:
+
+```bash
+./run.sh dev
+```
+
+7. Access the application at `http://localhost:8080`
 
 ## Project Structure
 
@@ -87,47 +181,40 @@ cp .env.example .env
 starter-vlang-webui-angular-rspack/
 ├── src/                          # V Backend Source
 │   ├── main.v                    # Application entry point
-│   ├── api_handlers.v            # API request handlers
-│   ├── validator.v               # Validation pipeline
-│   ├── rate_limiter.v            # Rate limiting middleware
-│   ├── json_storage_service.v    # Data storage service
-│   ├── security/                 # Security modules
-│   │   ├── password.v            # Password hashing
-│   │   ├── token.v               # Token generation
-│   │   └── validation.v          # Input validation
-│   └── errors/                   # Error handling
+│   ├── handlers/                 # API request handlers
+│   ├── services/                 # Business logic services
+│   ├── models/                   # Data models
+│   ├── middleware/               # Request middleware
+│   └── security/                 # Security modules
 │
 ├── frontend/                     # Angular Frontend
 │   ├── src/
-│   │   ├── views/                # Page components
+│   │   ├── features/             # Feature modules
+│   │   ├── components/           # Shared components
 │   │   ├── core/                 # Core services
-│   │   ├── models/               # TypeScript interfaces
-│   │   └── types/                # Type definitions
+│   │   └── models/               # TypeScript interfaces
 │   └── package.json
 │
-├── data/                         # Application Data
-│   └── duckdb_demo.json
+├── data/                         # Database Files
+│   ├── app.db                    # SQLite database
+│   └── duckdb_demo.json          # DuckDB JSON data
 │
 ├── docs/                         # Documentation
-│   ├── 00-DOCUMENTATION.md       # Main documentation
-│   ├── 01-CRUD-DEMOS.md          # CRUD demos
-│   └── DEVELOPER_EXPERIENCE_IMPROVEMENTS.md
-│
-├── build/                        # Build Output
-│   └── desktop-dashboard
+│   ├── INDEX.md                  # Documentation index
+│   ├── 00-GETTING_STARTED.md     # Setup guide
+│   ├── 01-CRUD-DEMOS.md          # CRUD implementation guides
+│   └── reports/                  # Audit and test reports
 │
 ├── scripts/                      # Utility Scripts
-│   └── dev-setup.sh
+│   ├── sync-docs.sh              # Documentation sync
+│   └── generate-docs-manifest.js # Menu generator
 │
 ├── .env.example                  # Environment template
-├── LICENSE                       # MIT License
-├── CHANGELOG.md                  # Version history
-├── README.md                     # This file
-├── run.sh                        # Main build script
-└── build.config.sh               # Build configuration
+├── run.sh                        # Build and run script
+└── README.md                     # This file
 ```
 
-## Commands
+## Available Commands
 
 | Command | Description |
 |---------|-------------|
@@ -137,27 +224,22 @@ starter-vlang-webui-angular-rspack/
 | `./run.sh clean` | Clean build artifacts |
 | `./run.sh help` | Show help message |
 
-## Configuration
+## Configuration Reference
 
-Copy `.env.example` to `.env` and configure your environment:
-
-```bash
-cp .env.example .env
-```
-
-### Key Configuration Options
+### Application Settings
 
 ```bash
-# Application
+# Environment
 APP_ENV=development
 APP_DEBUG=true
-APP_NAME="Desktop Dashboard"
+APP_NAME="DuckDB SQLite CRUD App"
 
 # Server
 SERVER_HOST=localhost
 SERVER_PORT=8080
 
 # Database
+DB_TYPE=duckdb
 DB_PATH=data/duckdb_demo.json
 DB_DEMO_MODE=true
 
@@ -173,92 +255,132 @@ LOG_TO_CONSOLE=true
 LOG_TO_FILE=false
 ```
 
-## Security Features
+## API Endpoints
 
-### Password Hashing
+### User Operations
 
-Passwords are hashed using multi-round key stretching with 10,000 iterations and entropy-based salt generation.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | getUsers | Retrieve all users |
+| GET | getUserById | Retrieve user by ID |
+| POST | createUser | Create new user |
+| PUT | updateUser | Update existing user |
+| DELETE | deleteUser | Delete user |
+| GET | getUserStats | Get user statistics |
 
-```v
-// Hash a password
-hash := hash_password("mypassword")
-// Returns: v1$salt$10000$hash_value
+### Product Operations
 
-// Verify a password
-if verify_password("mypassword", hash) {
-    // Password is valid
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | getProducts | Retrieve all products |
+| POST | createProduct | Create new product |
+| PUT | updateProduct | Update existing product |
+| DELETE | deleteProduct | Delete product |
+| GET | getProductStats | Get product statistics |
+
+### Order Operations
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | getOrders | Retrieve all orders |
+| POST | createOrder | Create new order |
+| PUT | updateOrder | Update order status |
+| DELETE | deleteOrder | Delete order |
+| GET | getOrderStats | Get order statistics |
+
+### Authentication Operations
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | auth.login | Authenticate user |
+| POST | auth.logout | End user session |
+| POST | auth.getCSRFToken | Get CSRF token |
+
+## Data Models
+
+### User
+
+```typescript
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  age: number;
+  created_at: string;
 }
 ```
 
-### Token Generation
+### Product
 
-High-entropy tokens are generated using xorshift64* algorithm for sessions, CSRF, and API keys.
-
-```v
-// Generate secure token
-token := generate_secure_token("csrf")
-// Returns: csrf_randomhex_timestamp
+```typescript
+interface Product {
+  id: number;
+  name: string;
+  description: string;
+  price: number;
+  stock: number;
+  category: string;
+  created_at: string;
+}
 ```
 
-### Rate Limiting
+### Order
 
-API endpoints are protected with configurable rate limits:
-
-- 60 requests per minute
-- 1000 requests per hour
-- 10 requests burst limit
-
-Rate limit headers are included in responses:
+```typescript
+interface Order {
+  id: number;
+  user_id: number;
+  user_name: string;
+  items: OrderItem[];
+  total: number;
+  status: 'pending' | 'completed' | 'shipped' | 'cancelled';
+  created_at: string;
+}
 ```
-X-RateLimit-Limit-Minute: 60
-X-RateLimit-Remaining-Minute: 59
-Retry-After: 60
+
+## Database Schema
+
+### SQLite Tables
+
+```sql
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    age INTEGER NOT NULL CHECK(age >= 1 AND age <= 150),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE products (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    description TEXT,
+    price REAL NOT NULL CHECK(price > 0),
+    stock INTEGER NOT NULL DEFAULT 0 CHECK(stock >= 0),
+    category TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE orders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    user_name TEXT NOT NULL,
+    total REAL NOT NULL CHECK(total >= 0),
+    status TEXT DEFAULT 'pending' CHECK(status IN ('pending', 'completed', 'shipped', 'cancelled')),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE order_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    order_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    product_name TEXT NOT NULL,
+    quantity INTEGER NOT NULL CHECK(quantity > 0),
+    price REAL NOT NULL CHECK(price >= 0),
+    FOREIGN KEY (order_id) REFERENCES orders(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
 ```
-
-### CSRF Protection
-
-State-changing operations (POST, PUT, DELETE, PATCH) require CSRF tokens. Tokens are single-use and expire after 1 hour.
-
-## API Endpoints
-
-### User Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `getUsers` | Get all users |
-| GET | `getUserById` | Get user by ID |
-| POST | `createUser` | Create new user |
-| PUT | `updateUser` | Update user |
-| DELETE | `deleteUser` | Delete user |
-| GET | `getUserStats` | Get user statistics |
-
-### Product Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `getProducts` | Get all products |
-| POST | `createProduct` | Create new product |
-| PUT | `updateProduct` | Update product |
-| DELETE | `deleteProduct` | Delete product |
-
-### Order Endpoints
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `getOrders` | Get all orders |
-| POST | `createOrder` | Create new order |
-| PUT | `updateOrder` | Update order status |
-| DELETE | `deleteOrder` | Delete order |
-
-### DevTools Endpoints
-
-| Endpoint | Description |
-|----------|-------------|
-| `devtools.getStats` | Get application statistics |
-| `devtools.getLogs` | Get recent logs |
-| `devtools.getErrors` | Get error reports |
-| `devtools.getMetrics` | Get performance metrics |
-| `devtools.getUptime` | Get application uptime |
 
 ## Testing
 
@@ -281,59 +403,11 @@ cd frontend
 bun test
 ```
 
-### E2E Tests
+### Security Tests
 
 ```bash
-cd frontend
-bunx playwright test
-```
-
-## Documentation
-
-Comprehensive documentation is available in the `docs/` directory:
-
-- [Main Documentation](docs/00-DOCUMENTATION.md) - Complete guide
-- [CRUD Demos](docs/01-CRUD-DEMOS.md) - SQLite and DuckDB examples
-- [Developer Experience](docs/DEVELOPER_EXPERIENCE_IMPROVEMENTS.md) - DX improvements
-- [Architecture](docs/01-ARCHITECTURE.md) - System design
-- [API Reference](docs/04-API_REFERENCE.md) - API documentation
-
-## Development
-
-### Hot Reload
-
-For faster development, use hot reload:
-
-```bash
-# Backend with live reload
-v -live run src/
-
-# Frontend with HMR
-cd frontend && bun run dev
-```
-
-### Code Style
-
-#### V Backend
-
-- Function naming: snake_case (`new_config_service`, `get_all_users`)
-- Struct naming: PascalCase (`ConfigService`, `User`)
-- Error handling: Use `or {}` blocks
-
-#### TypeScript Frontend
-
-- Use `inject()` for dependency injection
-- Use signals for state management
-- Avoid `any` types; use proper interfaces
-- Use `LoggerService` instead of `console.log`
-
-### Pre-commit Hooks
-
-```bash
-cd frontend
-bun add -D husky lint-staged
-bunx husky install
-bunx husky add .husky/pre-commit "bunx lint-staged"
+v test src/security_test.v
+cd frontend && bun test security.test.ts
 ```
 
 ## Deployment
@@ -344,16 +418,6 @@ bunx husky add .husky/pre-commit "bunx lint-staged"
 ./run.sh build
 ```
 
-### Docker Deployment
-
-```bash
-# Build Docker image
-docker build -t desktop-dashboard .
-
-# Run container
-docker run -p 8080:8080 desktop-dashboard
-```
-
 ### Environment Variables for Production
 
 ```bash
@@ -361,38 +425,28 @@ APP_ENV=production
 APP_DEBUG=false
 LOG_LEVEL=error
 LOG_TO_FILE=true
-DB_PATH=/var/lib/dashboard/data.json
+DB_PATH=/var/lib/app/data.db
 ```
 
-## Troubleshooting
-
-### V Compiler Not Found
+### Docker Deployment
 
 ```bash
-git clone https://github.com/vlang/v
-cd v
-make
-sudo ln -s $(pwd)/v /usr/local/bin/v
+docker build -t duckdb-sqlite-crud .
+docker run -p 8080:8080 -v app-data:/app/data duckdb-sqlite-crud
 ```
 
-### GTK3/WebKit Missing (Linux)
+## Documentation
 
-```bash
-# Ubuntu/Debian
-sudo apt-get install libgtk-3-dev libwebkit2gtk-4.0-dev
+Comprehensive documentation is available in the `docs/` directory:
 
-# Fedora
-sudo dnf install gtk3-devel webkit2gtk3-devel
-```
-
-### Frontend Build Fails
-
-```bash
-cd frontend
-rm -rf node_modules
-bun install
-bun run build
-```
+| Document | Description |
+|----------|-------------|
+| [Getting Started](docs/00-GETTING_STARTED.md) | Installation and setup guide |
+| [CRUD Demos](docs/01-CRUD-DEMOS.md) | SQLite and DuckDB implementation examples |
+| [API Reference](docs/02-API_REFERENCE.md) | Complete API documentation |
+| [Security](docs/03-SECURITY.md) | Security features and best practices |
+| [Development](docs/04-DEVELOPMENT.md) | Developer guide |
+| [Deployment](docs/05-DEPLOYMENT.md) | Production deployment guide |
 
 ## Contributing
 
@@ -411,28 +465,28 @@ bun run build
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for version history and recent changes.
+This project is licensed under the MIT License. See LICENSE file for details.
 
 ## Support
 
 For issues, questions, or contributions:
 
-1. Check the [documentation](docs/)
-2. Open a GitHub issue
-3. Use GitHub Discussions for questions
-4. Report security issues privately
+1. Check the documentation in `docs/`
+2. Review existing GitHub issues
+3. Open a new GitHub issue
+4. Use GitHub Discussions for questions
 
-## Acknowledgments
+## Version Information
 
-- V Language team for the V compiler
-- Angular team for the Angular framework
-- WebUI library for window management
-- All contributors to this project
+| Component | Version |
+|-----------|---------|
+| V Language | 0.5.1+ |
+| Angular | 21.1.5 |
+| Bun | 1.3.11 |
+| Rspack | 1.7.6 |
+| Vega | 6.2.0 |
+| Vega-Lite | 6.4.2 |
 
 ---
 
-Last Updated: 2026-03-29
+Last Updated: 2026-03-31

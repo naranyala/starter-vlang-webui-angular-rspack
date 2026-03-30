@@ -13,6 +13,7 @@ import { ApiService } from '../../core/api.service';
 import { DuckdbUsersComponent } from '../duckdb/duckdb-users.component';
 import { DuckdbProductsComponent } from '../duckdb/duckdb-products.component';
 import { DuckdbOrdersComponent } from '../duckdb/duckdb-orders.component';
+import { VegaChartsDemoComponent } from '../../features/vega-charts/vega-charts-demo.component';
 
 export interface DashboardStats {
   totalUsers: number;
@@ -39,6 +40,7 @@ export interface NavItem {
     DuckdbUsersComponent,
     DuckdbProductsComponent,
     DuckdbOrdersComponent,
+    VegaChartsDemoComponent,
   ],
   template: `
     <div class="dashboard-container">
@@ -69,12 +71,34 @@ export interface NavItem {
         <!-- Thirdparty Demo Section -->
         <div class="pill-section">
           <button class="section-header" (click)="toggleDemoSection()">
-            <span class="section-title">Thirdparty Demos</span>
+            <span class="section-title">Database Demos</span>
             <span class="section-toggle">{{ demoOpen() ? '▼' : '▶' }}</span>
           </button>
           @if (demoOpen()) {
             <div class="pill-container">
               @for (item of demoItems(); track item.id) {
+                <button
+                  class="dot-pill"
+                  [class.active]="activeView() === item.id"
+                  (click)="onNavClick(item.id)"
+                >
+                  <span class="pill-dot"></span>
+                  <span class="pill-text">{{ item.label }}</span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- Vega Charts Section -->
+        <div class="pill-section">
+          <button class="section-header" (click)="toggleVegaSection()">
+            <span class="section-title">Vega Charts</span>
+            <span class="section-toggle">{{ vegaOpen() ? '▼' : '▶' }}</span>
+          </button>
+          @if (vegaOpen()) {
+            <div class="pill-container">
+              @for (item of vegaItems(); track item.id) {
                 <button
                   class="dot-pill"
                   [class.active]="activeView() === item.id"
@@ -103,12 +127,22 @@ export interface NavItem {
             <app-duckdb-users [items]="users()" (statsChange)="onStatsUpdate($event)"></app-duckdb-users>
           } @else if (activeView() === 'demo_sqlite') {
             <app-duckdb-products [items]="products()" (statsChange)="onStatsUpdate($event)"></app-duckdb-products>
-          } @else if (activeView() === 'demo_websocket') {
-            <app-duckdb-orders [items]="orders()" (statsChange)="onStatsUpdate($event)"></app-duckdb-orders>
+          } @else if (activeView() === 'demo_vega_bar') {
+            <app-vega-charts-demo defaultChart="bar" />
+          } @else if (activeView() === 'demo_vega_line') {
+            <app-vega-charts-demo defaultChart="line" />
+          } @else if (activeView() === 'demo_vega_pie') {
+            <app-vega-charts-demo defaultChart="pie" />
+          } @else if (activeView() === 'demo_vega_scatter') {
+            <app-vega-charts-demo defaultChart="scatter" />
+          } @else if (activeView() === 'demo_vega_area') {
+            <app-vega-charts-demo defaultChart="area" />
+          } @else if (activeView() === 'demo_vega_heatmap') {
+            <app-vega-charts-demo defaultChart="heatmap" />
           } @else {
-            <markdown 
-              [src]="currentMarkdownPath()" 
-              (load)="onMarkdownLoad($event)" 
+            <markdown
+              [src]="currentMarkdownPath()"
+              (load)="onMarkdownLoad($event)"
               (error)="onMarkdownError($event)">
             </markdown>
           }
@@ -604,6 +638,7 @@ export class DashboardComponent implements OnInit {
 
   docsOpen = signal(true);
   demoOpen = signal(true);
+  vegaOpen = signal(true);
 
   docItems = signal<NavItem[]>([
     { id: 'INDEX', label: 'Overview', icon: '📖', active: true },
@@ -617,12 +652,17 @@ export class DashboardComponent implements OnInit {
   ]);
 
   demoItems = signal<NavItem[]>([
-    { id: 'demo_duckdb', label: 'DuckDB', icon: '🦆', active: false },
-    { id: 'demo_sqlite', label: 'SQLite', icon: '🗃️', active: false },
-    { id: 'demo_websocket', label: 'WebSocket', icon: '🔌', active: false },
-    { id: 'demo_chart', label: 'Charts', icon: '📊', active: false },
-    { id: 'demo_pdf', label: 'PDF Viewer', icon: '📄', active: false },
-    { id: 'demo_maps', label: 'Maps', icon: '🗺️', active: false },
+    { id: 'demo_duckdb', label: 'DuckDB Users', icon: '🦆', active: false },
+    { id: 'demo_sqlite', label: 'SQLite Users', icon: '🗄️', active: false },
+  ]);
+
+  vegaItems = signal<NavItem[]>([
+    { id: 'demo_vega_bar', label: 'Bar Chart', icon: '📊', active: false },
+    { id: 'demo_vega_line', label: 'Line Chart', icon: '📈', active: false },
+    { id: 'demo_vega_pie', label: 'Pie Chart', icon: '🥧', active: false },
+    { id: 'demo_vega_scatter', label: 'Scatter Plot', icon: '⋱', active: false },
+    { id: 'demo_vega_area', label: 'Area Chart', icon: '📉', active: false },
+    { id: 'demo_vega_heatmap', label: 'Heatmap', icon: '🔥', active: false },
   ]);
 
   currentPageTitle = signal('Documentation');
@@ -679,7 +719,8 @@ export class DashboardComponent implements OnInit {
     this.activeView.set(viewId);
     const docItem = this.docItems().find(i => i.id === viewId);
     const demoItem = this.demoItems().find(i => i.id === viewId);
-    const item = docItem || demoItem;
+    const vegaItem = this.vegaItems().find(i => i.id === viewId);
+    const item = docItem || demoItem || vegaItem;
     this.currentPageTitle.set(item ? item.label : viewId);
 
     if (viewId.startsWith('demo_')) {
@@ -709,6 +750,10 @@ export class DashboardComponent implements OnInit {
 
   toggleDemoSection(): void {
     this.demoOpen.update(v => !v);
+  }
+
+  toggleVegaSection(): void {
+    this.vegaOpen.update(v => !v);
   }
 
   onMarkdownLoad(event: any): void {

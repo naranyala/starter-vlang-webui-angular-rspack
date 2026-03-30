@@ -1,0 +1,289 @@
+{
+  "version": "1.0.0",
+  "generatedAt": "2026-03-30T19:24:33.387Z",
+  "docsFolder": "/run/media/naranyala/Data/projects-remote/starter-vlang-webui-angular-rspack/docs",
+  "groups": [
+    {
+      "id": "core",
+      "title": "Core Documentation",
+      "icon": "📖",
+      "items": [
+        {
+          "id": "INDEX",
+          "label": "Overview",
+          "icon": "📖",
+          "path": "INDEX.md",
+          "description": "Production-ready guides for implementing CRUD operations with DuckDB and SQLite storage backends.",
+          "updatedAt": "2026-03-30T09:30:20.946Z"
+        },
+        {
+          "id": "00-GETTING_STARTED",
+          "label": "Getting Started",
+          "icon": "🚀",
+          "path": "00-GETTING_STARTED.md",
+          "description": "Quick setup guide for implementing production-ready CRUD operations with DuckDB and SQLite storage backends.",
+          "updatedAt": "2026-03-30T09:31:02.801Z"
+        },
+        {
+          "id": "01-ARCHITECTURE",
+          "label": "Architecture",
+          "icon": "🏗️",
+          "path": "01-ARCHITECTURE.md",
+          "description": "Architecture documentation for DuckDB and SQLite CRUD integrations.",
+          "updatedAt": "2026-03-30T09:32:15.542Z"
+        },
+        {
+          "id": "01-CRUD-DEMOS",
+          "label": "CRUD Demos",
+          "icon": "📋",
+          "path": "01-CRUD-DEMOS.md",
+          "description": "Complete guide for implementing CRUD operations with SQLite and DuckDB storage backends.",
+          "updatedAt": "2026-03-30T09:34:05.765Z"
+        },
+        {
+          "id": "02-API_REFERENCE",
+          "label": "API Reference",
+          "icon": "📚",
+          "path": "02-API_REFERENCE.md",
+          "description": "Complete API documentation for DuckDB and SQLite CRUD operations.",
+          "updatedAt": "2026-03-30T09:35:16.548Z"
+        },
+        {
+          "id": "03-SECURITY",
+          "label": "Security",
+          "icon": "🔒",
+          "path": "03-SECURITY.md",
+          "description": "Security best practices for DuckDB and SQLite CRUD integrations.",
+          "updatedAt": "2026-03-30T09:36:17.081Z"
+        },
+        {
+          "id": "04-DEVELOPMENT",
+          "label": "Development",
+          "icon": "🛠️",
+          "path": "04-DEVELOPMENT.md",
+          "description": "Developer guide for implementing and testing DuckDB and SQLite CRUD operations.",
+          "updatedAt": "2026-03-30T09:37:58.789Z"
+        },
+        {
+          "id": "05-DEPLOYMENT",
+          "label": "Deployment",
+          "icon": "📦",
+          "path": "05-DEPLOYMENT.md",
+          "description": "Deployment guide for production-ready DuckDB and SQLite CRUD integrations.",
+          "updatedAt": "2026-03-30T09:39:37.571Z"
+        }
+      ]
+    },
+    {
+      "id": "reports",
+      "title": "Reports & Audits",
+      "icon": "📊",
+      "items": [
+        {
+          "id": "ABSTRACTION_AUDIT_REPORT",
+          "label": "Backend & Frontend Abstraction Audit Report",
+          "icon": "📄",
+          "path": "reports/ABSTRACTION_AUDIT_REPORT",
+          "description": "**Project:** DuckDB & SQLite CRUD Application"
+        },
+        {
+          "id": "README",
+          "label": "Reports & Audits",
+          "icon": "📄",
+          "path": "reports/README",
+          "description": "Current Audit: [2026-03-16-codebase-audit.md](../2026-03-16-codebase-audit.md)"
+        },
+        {
+          "id": "SECURITY_AUDIT_REPORT",
+          "label": "Security Audit Report",
+          "icon": "📄",
+          "path": "reports/SECURITY_AUDIT_REPORT",
+          "description": "**Project:** DuckDB & SQLite CRUD Application"
+        }
+      ]
+    },
+    {
+      "id": "demos",
+      "title": "Demos & Examples",
+      "icon": "🎯",
+      "items": []
+    },
+    {
+      "id": "guides",
+      "title": "Guides",
+      "icon": "📚",
+      "items": [
+        {
+          "id": "README",
+          "label": "Setup & Configuration",
+          "icon": "📝",
+          "path": "setup/README",
+          "description": "Main Guide: [SQLITE_SETUP.md](SQLITE_SETUP.md)"
+        },
+        {
+          "id": "SQLITE_SETUP",
+          "label": "SQLite Persistent Storage Setup",
+          "icon": "📝",
+          "path": "setup/SQLITE_SETUP",
+          "description": "## [DONE] Default: JSON File Storage (No Installation Required)"
+        }
+      ]
+    }
+  ],
+  "allDocs": [
+    {
+      "id": "00-GETTING_STARTED",
+      "label": "Getting Started with DuckDB & SQLite CRUD",
+      "path": "00-GETTING_STARTED.md",
+      "group": "core",
+      "description": "Quick setup guide for implementing production-ready CRUD operations with DuckDB and SQLite storage backends."
+    },
+    {
+      "id": "01-ARCHITECTURE",
+      "label": "Data Layer Architecture",
+      "path": "01-ARCHITECTURE.md",
+      "group": "core",
+      "description": "Architecture documentation for DuckDB and SQLite CRUD integrations."
+    },
+    {
+      "id": "01-CRUD-DEMOS",
+      "label": "Production-Ready SQLite & DuckDB CRUD Integration",
+      "path": "01-CRUD-DEMOS.md",
+      "group": "core",
+      "description": "Complete guide for implementing CRUD operations with SQLite and DuckDB storage backends."
+    },
+    {
+      "id": "02-API_REFERENCE",
+      "label": "CRUD API Reference",
+      "path": "02-API_REFERENCE.md",
+      "group": "core",
+      "description": "Complete API documentation for DuckDB and SQLite CRUD operations."
+    },
+    {
+      "id": "03-SECURITY",
+      "label": "Data Security for CRUD Operations",
+      "path": "03-SECURITY.md",
+      "group": "core",
+      "description": "Security best practices for DuckDB and SQLite CRUD integrations."
+    },
+    {
+      "id": "04-DEVELOPMENT",
+      "label": "CRUD Development Workflows",
+      "path": "04-DEVELOPMENT.md",
+      "group": "core",
+      "description": "Developer guide for implementing and testing DuckDB and SQLite CRUD operations."
+    },
+    {
+      "id": "05-DEPLOYMENT",
+      "label": "Deploying with SQLite & DuckDB",
+      "path": "05-DEPLOYMENT.md",
+      "group": "core",
+      "description": "Deployment guide for production-ready DuckDB and SQLite CRUD integrations."
+    },
+    {
+      "id": "DOCUMENTATION_RENDERING_FIX",
+      "label": "Documentation Rendering Fix Summary",
+      "path": "DOCUMENTATION_RENDERING_FIX.md",
+      "group": "core",
+      "description": "## Problem Identified"
+    },
+    {
+      "id": "INDEX",
+      "label": "DuckDB & SQLite CRUD Integration Documentation",
+      "path": "INDEX.md",
+      "group": "core",
+      "description": "Production-ready guides for implementing CRUD operations with DuckDB and SQLite storage backends."
+    },
+    {
+      "id": "architecture/README",
+      "label": "Architecture Documentation",
+      "path": "architecture/README.md",
+      "group": "architecture",
+      "description": "Main Document: [01-ARCHITECTURE.md](../01-ARCHITECTURE.md)"
+    },
+    {
+      "id": "build/BUILD_PIPELINE",
+      "label": "Build Pipeline Documentation",
+      "path": "build/BUILD_PIPELINE.md",
+      "group": "build",
+      "description": "**Project:** vlang-webui-angular-rspack (Desktop Dashboard)"
+    },
+    {
+      "id": "build/README",
+      "label": "Build System Documentation",
+      "path": "build/README.md",
+      "group": "build",
+      "description": "Main Document: [BUILD_PIPELINE.md](BUILD_PIPELINE.md)"
+    },
+    {
+      "id": "reports/ABSTRACTION_AUDIT_REPORT",
+      "label": "Backend & Frontend Abstraction Audit Report",
+      "path": "reports/ABSTRACTION_AUDIT_REPORT.md",
+      "group": "reports",
+      "description": "**Project:** DuckDB & SQLite CRUD Application"
+    },
+    {
+      "id": "reports/README",
+      "label": "Reports & Audits",
+      "path": "reports/README.md",
+      "group": "reports",
+      "description": "Current Audit: [2026-03-16-codebase-audit.md](../2026-03-16-codebase-audit.md)"
+    },
+    {
+      "id": "reports/SECURITY_AUDIT_REPORT",
+      "label": "Security Audit Report",
+      "path": "reports/SECURITY_AUDIT_REPORT.md",
+      "group": "reports",
+      "description": "**Project:** DuckDB & SQLite CRUD Application"
+    },
+    {
+      "id": "setup/README",
+      "label": "Setup & Configuration",
+      "path": "setup/README.md",
+      "group": "setup",
+      "description": "Main Guide: [SQLITE_SETUP.md](SQLITE_SETUP.md)"
+    },
+    {
+      "id": "setup/SQLITE_SETUP",
+      "label": "SQLite Persistent Storage Setup",
+      "path": "setup/SQLITE_SETUP.md",
+      "group": "setup",
+      "description": "## [DONE] Default: JSON File Storage (No Installation Required)"
+    },
+    {
+      "id": "testing/README",
+      "label": "Testing Documentation",
+      "path": "testing/README.md",
+      "group": "testing",
+      "description": "Main Document: [07-TESTING.md](../07-TESTING.md)"
+    },
+    {
+      "id": "testing/TESTING_IMPROVEMENT_REPORT",
+      "label": "Testing Suite Improvement Report",
+      "path": "testing/TESTING_IMPROVEMENT_REPORT.md",
+      "group": "testing",
+      "description": "**Date:** 2026-03-16"
+    },
+    {
+      "id": "testing/TEST_ANALYSIS_AND_IMPROVEMENT_PLAN",
+      "label": "Testing Suite Analysis & Improvement Plan",
+      "path": "testing/TEST_ANALYSIS_AND_IMPROVEMENT_PLAN.md",
+      "group": "testing",
+      "description": "**Date:** 2026-03-16"
+    },
+    {
+      "id": "ui-layouts/MACOS_COLUMN_LAYOUT",
+      "label": "macOS Finder Column View Layout",
+      "path": "ui-layouts/MACOS_COLUMN_LAYOUT.md",
+      "group": "ui-layouts",
+      "description": "**Created:** 2026-03-16"
+    },
+    {
+      "id": "ui-layouts/README",
+      "label": "UI & Layouts Documentation",
+      "path": "ui-layouts/README.md",
+      "group": "ui-layouts",
+      "description": "Current Layout: [MACOS_COLUMN_LAYOUT.md](MACOS_COLUMN_LAYOUT.md)"
+    }
+  ]
+}
